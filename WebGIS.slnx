@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="frontend/frontend.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="WebGIS.AppHost/WebGIS.AppHost.csproj" />
+  <Project Path="WebGIS.Server/WebGIS.Server.csproj" />
+</Solution>
