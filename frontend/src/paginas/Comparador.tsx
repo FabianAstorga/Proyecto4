@@ -1,280 +1,32 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   CalendarDays,
-  ChevronDown,
   ClipboardList,
   FileDown,
   FilePlus2,
-  Image as ImageIcon,
   MapPin,
 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import { CurtainComparator } from '@/components/CurtainComparator';
-import { CAPTURES, SECTORS, getSector } from '@/mocks/data';
+import {
+  Cortina,
+  ImpresionComparacion,
+  SelectorCaptura,
+  SelectorLugar,
+} from '@/components/Comparador';
+import { CAPTURES, getSector } from '@/mocks/data';
 import type { Capture, SectorId } from '@/types';
-import { cn, formatDateShort } from '@/utils/format';
 import { saveComparisonSelection } from '@/utils/reportStorage';
 
 const HEADER_IMAGES = CAPTURES.filter((capture) =>
   capture.id.endsWith('-b'),
 ).map((capture) => capture.src);
 
-const PLACE_BUTTON =
-  'flex w-full items-center justify-between gap-3 border border-slate-200 bg-slate-50 px-4 py-3.5 text-left outline-none transition-all focus:border-[#002855] focus:bg-white focus:ring-2 focus:ring-blue-100';
-
 const DATE_INPUT =
   'w-full border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-800 outline-none transition-all focus:border-[#002855] focus:bg-white focus:ring-2 focus:ring-blue-100';
 
-interface PlaceSelectProps {
-  value: SectorId | '';
-  onChange: (value: SectorId | '') => void;
-}
-
-const PlaceSelect = ({ value, onChange }: PlaceSelectProps) => {
-  const [open, setOpen] = useState(false);
-  const selected = value ? getSector(value) : undefined;
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={PLACE_BUTTON}
-      >
-        <span className="flex min-w-0 items-center gap-2.5">
-          <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
-          <span
-            className={cn(
-              'truncate text-sm',
-              selected
-                ? 'font-semibold text-slate-800'
-                : 'font-medium text-slate-400',
-            )}
-          >
-            {selected?.nombre ?? 'Selecciona un lugar'}
-          </span>
-        </span>
-        <ChevronDown
-          className={cn(
-            'h-4 w-4 shrink-0 text-slate-400 transition-transform',
-            open && 'rotate-180',
-          )}
-        />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <>
-            <button
-              type="button"
-              aria-label="Cerrar lista de lugares"
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-20 cursor-default"
-            />
-            <motion.ul
-              initial={{ opacity: 0, y: -6, scale: 0.99 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.99 }}
-              transition={{ duration: 0.16 }}
-              role="listbox"
-              aria-label="Lugares"
-              className="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-2xl"
-            >
-              {SECTORS.map((sector) => {
-                const active = sector.id === value;
-                return (
-                  <li key={sector.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={active}
-                      onClick={() => {
-                        onChange(sector.id);
-                        setOpen(false);
-                      }}
-                      className={cn(
-                        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
-                        active
-                          ? 'bg-[#002855] text-white'
-                          : 'text-slate-600 hover:bg-slate-50',
-                      )}
-                    >
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: sector.color }}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[11px] font-black uppercase tracking-wide">
-                          {sector.nombre}
-                        </span>
-                        <span
-                          className={cn(
-                            'mt-0.5 block font-mono text-[8px] uppercase tracking-wider',
-                            active ? 'text-blue-200/70' : 'text-slate-400',
-                          )}
-                        >
-                          {sector.superficie}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </motion.ul>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-interface CaptureSlotProps {
-  slot: 'A' | 'B';
-  label: string;
-  date: string;
-  onChange: (value: string) => void;
-  capture?: Capture;
-  enabled: boolean;
-  min?: string;
-  max?: string;
-}
-
-const CaptureSlot = ({
-  slot,
-  label,
-  date,
-  onChange,
-  capture,
-  enabled,
-  min,
-  max,
-}: CaptureSlotProps) => (
-  <article className="overflow-hidden border border-slate-200 bg-white shadow-sm">
-    <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-3 py-2.5">
-      <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            'grid h-6 w-6 place-items-center text-[10px] font-black',
-            slot === 'A'
-              ? 'bg-blue-600 text-white'
-              : 'bg-[#ffd700] text-[#001a35]',
-          )}
-        >
-          {slot}
-        </span>
-        <span className="text-[8px] font-black uppercase tracking-[0.18em] text-slate-400">
-          {label}
-        </span>
-      </div>
-    </header>
-
-    <div className="border-b border-slate-100 p-3">
-      <input
-        type="date"
-        value={date}
-        min={min}
-        max={max}
-        disabled={!enabled}
-        onChange={(event) => onChange(event.target.value)}
-        aria-label={`Seleccionar ${label.toLowerCase()} de la comparación`}
-        className="w-full border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition-all focus:border-[#002855] focus:bg-white focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400"
-      />
-    </div>
-
-    <div className="relative h-48 bg-slate-50 sm:h-56 lg:h-64">
-      {capture ? (
-        <img
-          src={capture.src}
-          alt={`Captura ${slot}, ${formatDateShort(capture.fecha)}`}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-2 flex items-center justify-center border border-dashed border-slate-200 bg-slate-50/70">
-          <ImageIcon className="h-6 w-6 text-slate-300" />
-        </div>
-      )}
-    </div>
-  </article>
-);
-
-const ComparisonPrint = ({
-  sectorName,
-  captureA,
-  captureB,
-}: {
-  sectorName: string;
-  captureA: Capture;
-  captureB: Capture;
-}) => (
-  <div
-    id="comparison-print-area"
-    className="comparison-print print-exact bg-white p-[14mm] text-slate-900"
-  >
-    <header className="flex items-start justify-between gap-6 border-b-4 border-[#002855] pb-4">
-      <div>
-        <p className="text-[9px] font-black uppercase tracking-[0.24em] text-blue-700">
-          EPA WebGIS
-        </p>
-        <h1 className="mt-1 text-2xl font-black uppercase tracking-tighter text-[#002855]">
-          Comparación temporal
-        </h1>
-      </div>
-      <div className="text-right">
-        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-          {sectorName}
-        </p>
-        <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-slate-400">
-          {formatDateShort(captureA.fecha)} — {formatDateShort(captureB.fecha)}
-        </p>
-      </div>
-    </header>
-
-    <div className="mt-6 grid grid-cols-2 gap-4">
-      {[
-        { capture: captureA, label: 'A', hint: 'Fecha anterior' },
-        { capture: captureB, label: 'B', hint: 'Fecha posterior' },
-      ].map(({ capture, label, hint }) => (
-        <figure key={label} className="border border-slate-200">
-          <div className="relative aspect-[16/9]">
-            <img
-              src={capture.src}
-              alt={`Captura ${label}`}
-              className="h-full w-full object-cover"
-            />
-            <span
-              className={cn(
-                'absolute left-2 top-2 grid h-5 w-5 place-items-center text-[8px] font-black',
-                label === 'A'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[#ffd700] text-[#001a35]',
-              )}
-            >
-              {label}
-            </span>
-          </div>
-          <figcaption className="flex items-center justify-between gap-2 px-2 py-2">
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">
-              {hint}
-            </span>
-            <span className="font-mono text-[8px] font-bold text-slate-500">
-              {formatDateShort(capture.fecha)}
-            </span>
-          </figcaption>
-        </figure>
-      ))}
-    </div>
-
-    <footer className="mt-8 border-t border-slate-200 pt-3 text-[8px] font-bold uppercase tracking-[0.18em] text-slate-400">
-      Documento generado desde el prototipo EPA WebGIS
-    </footer>
-  </div>
-);
-
-export const ComparatorPage = () => {
+export const Comparador = () => {
   const navigate = useNavigate();
 
   const [sectorId, setSectorId] = useState<SectorId | ''>('');
@@ -392,7 +144,7 @@ export const ComparatorPage = () => {
                   <MapPin className="h-3 w-3 text-slate-300" />
                   Lugar
                 </span>
-                <PlaceSelect value={sectorId} onChange={changeSector} />
+                <SelectorLugar value={sectorId} onChange={changeSector} />
               </div>
 
               <div>
@@ -435,7 +187,7 @@ export const ComparatorPage = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <CaptureSlot
+              <SelectorCaptura
                 slot="A"
                 label="Fecha anterior"
                 date={captureADate}
@@ -445,7 +197,7 @@ export const ComparatorPage = () => {
                 min={fromDate || undefined}
                 max={captureBDate || toDate || undefined}
               />
-              <CaptureSlot
+              <SelectorCaptura
                 slot="B"
                 label="Fecha posterior"
                 date={captureBDate}
@@ -467,7 +219,7 @@ export const ComparatorPage = () => {
             className="space-y-3"
           >
             <div className="border border-white/10 bg-[#001a35] p-2 shadow-2xl md:p-3">
-              <CurtainComparator
+              <Cortina
                 key={`${comparison.captureA.id}-${comparison.captureB.id}`}
                 captureA={comparison.captureA}
                 captureB={comparison.captureB}
@@ -505,7 +257,7 @@ export const ComparatorPage = () => {
       </div>
 
       {comparison && (
-        <ComparisonPrint
+        <ImpresionComparacion
           sectorName={sector?.nombre ?? 'Sector EPA'}
           captureA={comparison.captureA}
           captureB={comparison.captureB}

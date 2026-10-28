@@ -12,28 +12,162 @@ import Autoplay from 'embla-carousel-autoplay';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
+  Calendar,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
+  FileText,
   KeyRound,
+  Layers3,
   Lock,
   Mail,
+  MapPin,
   RefreshCw,
   UserRound,
   X,
 } from 'lucide-react';
-import { Brand } from '@/components/Brand';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/auth.service';
-import { CAPTURES, getSector } from '@/mocks/data';
 import type { Role } from '@/types';
 import { cn } from '@/utils/format';
 import { ui } from '@/utils/SwalService';
 
-const SLIDES = CAPTURES.filter((capture) => capture.id.endsWith('-b')).map(
-  (capture) => ({
-    capture,
-    sector: getSector(capture.sectorId),
-  }),
+interface MarcaProps {
+  tone?: 'light' | 'dark';
+  size?: 'sm' | 'md' | 'lg';
+  showSubtitle?: boolean;
+  className?: string;
+}
+
+const SIZES = {
+  sm: { box: 'h-9 w-9', title: 'text-base', sub: 'text-[7px]' },
+  md: { box: 'h-11 w-11', title: 'text-xl', sub: 'text-[8px]' },
+  lg: { box: 'h-14 w-14', title: 'text-2xl', sub: 'text-[9px]' },
+};
+
+/** Identidad propia del prototipo: sin logos ni material de terceros. */
+const Marca = ({
+  tone = 'light',
+  size = 'md',
+  showSubtitle = true,
+  className,
+}: MarcaProps) => {
+  const s = SIZES[size];
+  const isLight = tone === 'light';
+
+  return (
+    <div className={cn('flex items-center gap-3 select-none', className)}>
+      <div
+        className={cn(
+          'relative grid shrink-0 place-items-center overflow-hidden border shadow-lg',
+          s.box,
+          isLight ? 'border-white/20' : 'border-[#003B5C]/15',
+        )}
+        style={{ backgroundColor: '#003B5C' }}
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 64 64" className="h-full w-full">
+          <rect width="64" height="64" fill="#003B5C" />
+          <rect x="0" y="52" width="64" height="12" fill="#0F766E" />
+          <path
+            d="M14 14v32M14 17h30l-5 6H14"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="3"
+          />
+          <path d="M41 23v9" stroke="#7DD3FC" strokeWidth="2.5" />
+          <circle cx="41" cy="35" r="3" fill="none" stroke="#34D399" strokeWidth="2.5" />
+          <rect x="12" y="42" width="12" height="5" fill="#ffffff" />
+          <rect x="27" y="42" width="12" height="5" fill="#7DD3FC" />
+          <rect x="20" y="49" width="20" height="5" fill="#34D399" />
+        </svg>
+      </div>
+
+      <div className="min-w-0 leading-none">
+        <div
+          className={cn(
+            'flex items-baseline gap-1.5 font-black uppercase tracking-tighter',
+            s.title,
+            isLight ? 'text-white' : 'text-[#003B5C]',
+          )}
+        >
+          EPA
+          <span className={isLight ? 'text-[#7DD3FC]' : 'text-[#0284C7]'}>WebGIS</span>
+        </div>
+        {showSubtitle && (
+          <p
+            className={cn(
+              'mt-1 font-bold uppercase tracking-[0.22em]',
+              s.sub,
+              isLight ? 'text-white/45' : 'text-slate-400',
+            )}
+          >
+            Empresa Portuaria Arica
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface ReporteDemo {
+  id: string;
+  titulo: string;
+  sector: string;
+  fecha: string;
+  tipo: string;
+  estado: 'Pendiente' | 'En Gestión' | 'Resuelto';
+  hallazgos: number;
+  imagen: string;
+}
+
+const REPORTES: ReporteDemo[] = [
+  { id: 'INF-EPA-2026-001', titulo: 'Inspección operativa — Patio Norte', sector: 'Patio Norte', fecha: '14 SEP 2026', tipo: 'Inspección periódica', estado: 'Pendiente', hallazgos: 2, imagen: '/mock/aerial-patio-norte-b.svg' },
+  { id: 'INF-EPA-2026-002', titulo: 'Estado de pavimentos — Acceso Vial', sector: 'Acceso Vial', fecha: '14 SEP 2026', tipo: 'Consolidado mensual', estado: 'En Gestión', hallazgos: 1, imagen: '/mock/aerial-acceso-vial-b.svg' },
+  { id: 'INF-EPA-2026-003', titulo: 'Ocupación de bermas — ZEAP Sector C', sector: 'ZEAP Sector C', fecha: '14 SEP 2026', tipo: 'Incidencia crítica', estado: 'Pendiente', hallazgos: 3, imagen: '/mock/aerial-zeap-c-b.svg' },
+  { id: 'INF-EPA-2026-004', titulo: 'Operación de atraque — Muelle 1', sector: 'Muelle 1', fecha: '10 SEP 2026', tipo: 'Inspección periódica', estado: 'Resuelto', hallazgos: 1, imagen: '/mock/aerial-muelle-1-b.svg' },
+  { id: 'INF-EPA-2026-005', titulo: 'Circulación y residuos — Patio Sur', sector: 'Patio Sur', fecha: '12 SEP 2026', tipo: 'Consolidado mensual', estado: 'En Gestión', hallazgos: 2, imagen: '/mock/aerial-patio-sur-b.svg' },
+];
+
+const ESTADO_CLASES: Record<ReporteDemo['estado'], string> = {
+  Pendiente: 'bg-red-50 text-red-700',
+  'En Gestión': 'bg-amber-50 text-amber-800',
+  Resuelto: 'bg-emerald-50 text-emerald-700',
+};
+
+const ReporteCard = ({ reporte, active }: { reporte: ReporteDemo; active: boolean }) => (
+  <motion.article
+    animate={{ scale: active ? 1 : 0.96, opacity: active ? 1 : 0.6 }}
+    transition={{ duration: 0.35, ease: 'easeOut' }}
+    className="group relative flex h-full flex-col overflow-hidden border border-white/10 bg-white shadow-2xl"
+  >
+    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#38BDF8] to-[#34D399]" />
+    <div className="relative h-40 shrink-0 overflow-hidden bg-slate-100 md:h-48">
+      <img src={reporte.imagen} alt={reporte.titulo} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#003B5C]/55 to-transparent" />
+      <span className="absolute left-0 top-0 bg-[#003B5C] px-2.5 py-1.5 text-[8px] font-black uppercase tracking-widest text-white">{reporte.tipo}</span>
+      <span className={cn('absolute right-0 top-0 px-2.5 py-1.5 text-[8px] font-black uppercase tracking-widest', ESTADO_CLASES[reporte.estado])}>{reporte.estado}</span>
+    </div>
+    <div className="flex flex-1 flex-col p-5 md:p-6">
+      <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+        <FileText className="h-3.5 w-3.5 text-[#0EA5E9]" />
+        {reporte.id}
+      </div>
+      <h3 className="mt-2 line-clamp-2 text-xl font-black uppercase leading-tight tracking-tighter text-[#003B5C]">{reporte.titulo}</h3>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+        <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#0EA5E9]" />{reporte.sector}</span>
+        <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-[#0EA5E9]" />{reporte.fecha}</span>
+      </div>
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
+        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-500">
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />{reporte.hallazgos} hallazgos
+        </span>
+        <Layers3 className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[#0EA5E9]" />
+      </div>
+    </div>
+  </motion.article>
 );
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('es-CL', {
@@ -55,7 +189,7 @@ const INPUT =
 
 type Mode = 'login' | 'recover';
 
-export const LoginPage = () => {
+export const Login = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,10 +210,12 @@ export const LoginPage = () => {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const recoveryEmailRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isReportsSection, setIsReportsSection] = useState(false);
 
   const redirectTo = useMemo(() => {
     const state = location.state as { from?: { pathname?: string } } | null;
-    return state?.from?.pathname ?? '/comparador';
+    return state?.from?.pathname ?? '/inicio';
   }, [location.state]);
 
   const dateLabel = useMemo(
@@ -120,25 +256,38 @@ export const LoginPage = () => {
     };
   }, [isLoginOpen, mode]);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, align: 'start', duration: 28 },
-    [Autoplay({ delay: 6500, stopOnInteraction: false, stopOnMouseEnter: false })],
+  const [reportsEmblaRef, reportsEmblaApi] = useEmblaCarousel(
+    { loop: true, align: 'center', duration: 20 },
+    [
+      Autoplay({
+        delay: 3500,
+        stopOnInteraction: false,
+        stopOnMouseEnter: false,
+        stopOnFocusIn: false,
+      }),
+    ],
   );
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [reportIndex, setReportIndex] = useState(0);
 
-  const onSelect = useCallback(() => {
-    if (emblaApi) setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
+  const onReportSelect = useCallback(() => {
+    if (reportsEmblaApi) setReportIndex(reportsEmblaApi.selectedScrollSnap());
+  }, [reportsEmblaApi]);
 
   useEffect(() => {
-    if (!emblaApi) return;
-    emblaApi.on('select', onSelect).on('reInit', onSelect);
+    if (!reportsEmblaApi) return;
+    onReportSelect();
+    reportsEmblaApi.on('select', onReportSelect).on('reInit', onReportSelect);
     return () => {
-      emblaApi.off('select', onSelect).off('reInit', onSelect);
+      reportsEmblaApi.off('select', onReportSelect).off('reInit', onReportSelect);
     };
-  }, [emblaApi, onSelect]);
+  }, [reportsEmblaApi, onReportSelect]);
 
-  const slide = SLIDES[selectedIndex] ?? SLIDES[0];
+  const handlePanelScroll = () => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const next = node.scrollTop > node.clientHeight * 0.5;
+    setIsReportsSection((previous) => (previous === next ? previous : next));
+  };
 
   const closeLogin = () => {
     setIsLoginOpen(false);
@@ -220,46 +369,131 @@ export const LoginPage = () => {
     }
   };
 
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#001a35] text-white">
-      {/* Fondo: carrusel de capturas aéreas, sin controles ni textos extra */}
-      <div className="absolute inset-0 z-0" ref={emblaRef} aria-hidden="true">
-        <div className="flex h-full">
-          {SLIDES.map(({ capture }) => (
-            <div key={capture.id} className="relative h-screen min-w-full">
-              <img
-                src={capture.src}
-                alt=""
-                className="h-full w-full object-cover"
-                draggable={false}
-              />
-              <div className="absolute inset-0 bg-[#001a35]/15" />
+    <div className="fixed inset-0 overflow-hidden bg-[#002B45] text-white">
+      <div
+        ref={scrollRef}
+        onScroll={handlePanelScroll}
+        aria-hidden={isLoginOpen}
+        className={cn(
+          'no-scrollbar h-full overflow-y-auto overflow-x-hidden overscroll-y-contain snap-y snap-mandatory scroll-smooth',
+          isLoginOpen && 'overflow-hidden',
+        )}
+      >
+        {/* Portada: imagen fija con movimiento lento de cámara */}
+        <section className="relative h-screen w-full snap-start snap-always overflow-hidden">
+          <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+            <img
+              src="/hero-puerto-2.jpg"
+              alt=""
+              className="hero-camera h-full w-full object-cover"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-[#002B45]/25" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#00456E]/40 via-transparent to-[#0F766E]/35" />
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-3/5 bg-gradient-to-t from-[#002B45] via-[#003B5C]/55 to-transparent" />
+          <div className="blueprint-grid pointer-events-none absolute inset-0 z-[1] opacity-10" />
+
+          <div className="relative z-10 flex h-full items-end px-5 pb-8 pt-32 md:px-8 md:pb-12">
+            <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-8 md:flex-row md:items-end md:justify-between">
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, ease: 'easeOut' }}
+                className="max-w-4xl"
+              >
+                <h1 className="text-balance text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white sm:text-6xl lg:text-7xl">
+                  Monitoreo e
+                  <br />
+                  inspección
+                  <br />
+                  <span className="bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#34D399] bg-clip-text text-transparent">
+                    geoespacial
+                  </span>
+                </h1>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.1, ease: 'easeOut' }}
+                className="shrink-0 text-left md:text-right"
+              >
+                <p className="font-mono text-3xl font-black leading-none tracking-tighter text-white tabular-nums md:text-5xl">
+                  {timeLabel}
+                </p>
+                <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.28em] text-white/55">
+                  {dateLabel}
+                </p>
+              </motion.div>
             </div>
-          ))}
-        </div>
+          </div>
+        </section>
+
+        {/* Reportes: carrusel horizontal dentro de la segunda sección */}
+        <section className="reports-gradient relative h-screen w-full snap-start snap-always overflow-hidden">
+          <div className="relative z-10 flex h-full flex-col justify-center px-5 pb-10 pt-24 md:px-8">
+            <div className="mx-auto w-full max-w-[1500px]">
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div>
+                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.24em] text-[#0F766E]">
+                    <FileText className="h-3 w-3" />
+                    Reportes recientes
+                  </p>
+                  <h2 className="mt-2 text-3xl font-black uppercase leading-none tracking-tighter text-[#003B5C] md:text-5xl">
+                    Últimos <span className="text-[#0F766E]">reportes</span>
+                  </h2>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => reportsEmblaApi?.scrollPrev()}
+                    aria-label="Reporte anterior"
+                    className="grid h-9 w-9 place-items-center border border-[#003B5C]/15 bg-white/60 text-[#003B5C] transition-colors hover:bg-white hover:text-[#0F766E]"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => reportsEmblaApi?.scrollNext()}
+                    aria-label="Reporte siguiente"
+                    className="grid h-9 w-9 place-items-center border border-[#003B5C]/15 bg-white/60 text-[#003B5C] transition-colors hover:bg-white hover:text-[#0F766E]"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="embla overflow-visible" ref={reportsEmblaRef}>
+                <div className="flex h-[390px] touch-pan-y items-center md:h-[430px]">
+                  {REPORTES.map((reporte, index) => (
+                    <div
+                      key={reporte.id}
+                      className="min-w-0 flex-[0_0_90%] px-2 md:flex-[0_0_42%] lg:flex-[0_0_35%]"
+                    >
+                      <ReporteCard reporte={reporte} active={index === reportIndex} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-3/5 bg-gradient-to-t from-[#001a35] via-[#001a35]/55 to-transparent"
-        aria-hidden="true"
-      />
-      <div
-        className="blueprint-grid pointer-events-none absolute inset-0 z-[2] opacity-10"
-        aria-hidden="true"
-      />
-
-      {!isLoginOpen && (
+      {!isLoginOpen && !isReportsSection && (
         <div
-          className="pointer-events-none fixed inset-x-0 top-0 z-30 h-40 bg-gradient-to-b from-[#001a35]/80 to-transparent"
+          className="pointer-events-none fixed inset-x-0 top-0 z-30 h-40 bg-gradient-to-b from-[#002B45]/80 to-transparent"
           aria-hidden="true"
         />
       )}
 
-      {/* Cabezal: marca a la izquierda, acceso/cierre a la derecha */}
       <header className="fixed inset-x-0 top-0 z-50">
         <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-5 py-5 md:px-8">
-          <Brand
-            tone={isLoginOpen ? 'dark' : 'light'}
+          <Marca
+            tone={isLoginOpen || isReportsSection ? 'dark' : 'light'}
             size="md"
             showSubtitle={false}
           />
@@ -272,8 +506,10 @@ export const LoginPage = () => {
             className={cn(
               'flex items-center gap-2 border px-4 py-2.5 text-xs font-bold transition-all',
               isLoginOpen
-                ? 'border-[#002855]/15 bg-[#002855] text-white hover:bg-[#001a35]'
-                : 'border-white/20 bg-white/10 text-white backdrop-blur-md hover:bg-white/20',
+                ? 'border-[#003B5C]/15 bg-[#003B5C] text-white hover:bg-[#002B45]'
+                : isReportsSection
+                  ? 'border-[#003B5C]/20 bg-white/70 text-[#003B5C] backdrop-blur-md hover:bg-white'
+                  : 'border-white/20 bg-white/10 text-white backdrop-blur-md hover:bg-white/20',
             )}
           >
             {isLoginOpen ? (
@@ -285,61 +521,6 @@ export const LoginPage = () => {
           </button>
         </div>
       </header>
-
-      {/* Pantalla principal: solo título, sector y fecha/hora */}
-      <main
-        aria-hidden={isLoginOpen}
-        className="relative z-10 flex min-h-screen items-end px-5 pb-8 pt-32 md:px-8 md:pb-12"
-      >
-        <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: 'easeOut' }}
-            className="max-w-4xl"
-          >
-            <div className="mb-5 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-[0.28em] text-white/55">
-              <span className="h-1.5 w-1.5 bg-blue-400" />
-              Sector en pantalla
-              <span className="text-white/25">/</span>
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={slide.capture.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-white/90"
-                >
-                  {slide.sector?.nombre ?? 'Sector EPA'}
-                </motion.span>
-              </AnimatePresence>
-            </div>
-
-            <h1 className="text-balance text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white sm:text-6xl lg:text-7xl">
-              Monitoreo e
-              <br />
-              inspección
-              <br />
-              <span className="text-blue-400">geoespacial</span>
-            </h1>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.1, ease: 'easeOut' }}
-            className="shrink-0 text-left md:text-right"
-          >
-            <p className="font-mono text-3xl font-black leading-none tracking-tighter text-white tabular-nums md:text-5xl">
-              {timeLabel}
-            </p>
-            <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.28em] text-white/55">
-              {dateLabel}
-            </p>
-          </motion.div>
-        </div>
-      </main>
 
       {/* Slider lateral de acceso: ocupa toda la pantalla */}
       <AnimatePresence>
@@ -353,14 +534,14 @@ export const LoginPage = () => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 260 }}
-            className="fixed inset-0 z-40 overflow-y-auto bg-white"
+            className="login-gradient fixed inset-0 z-40 overflow-y-auto"
           >
             <div
-              className="dot-grid pointer-events-none absolute inset-0 opacity-40"
+              className="dot-grid pointer-events-none absolute inset-0 opacity-20"
               aria-hidden="true"
             />
             <div
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,#eff6ff,transparent_46%)]"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(255,255,255,0.55),transparent_58%)]"
               aria-hidden="true"
             />
 

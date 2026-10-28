@@ -99,6 +99,76 @@ body {
   background-size: 44px 44px;
 }
 
+/* Movimiento lento de cámara sobre la portada (Ken Burns). */
+@keyframes hero-camera {
+  0% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.13) translate3d(-1.6%, -1.1%, 0);
+  }
+  100% {
+    transform: scale(1.07) translate3d(1.1%, 0.6%, 0);
+  }
+}
+
+.hero-camera {
+  animation: hero-camera 26s ease-in-out infinite alternate;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* Degradado animado del panel de acceso: amarillo, celeste y verde. */
+@keyframes login-gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.login-gradient {
+  background-image: linear-gradient(
+    120deg,
+    #fef3c7 0%,
+    #e0f2fe 38%,
+    #dcfce7 70%,
+    #fef3c7 100%
+  );
+  background-size: 220% 220%;
+  animation: login-gradient 18s ease-in-out infinite;
+}
+
+/* Fondo estático de la sección de reportes: verde claro hacia amarillo. */
+.reports-gradient {
+  background-image: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 42%, #fef9c3 100%);
+}
+
+/* Fondo animado del home: celeste, verde y amarillo muy suaves. */
+@keyframes home-gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.home-gradient {
+  background-image: linear-gradient(
+    120deg,
+    #e0f2fe 0%,
+    #dcfce7 34%,
+    #fef3c7 68%,
+    #e0f2fe 100%
+  );
+  background-size: 220% 220%;
+  animation: home-gradient 24s ease-in-out infinite;
+}
+
 .dot-grid {
   background-image: radial-gradient(rgba(0, 40, 85, 0.12) 1px, transparent 1px);
   background-size: 22px 22px;

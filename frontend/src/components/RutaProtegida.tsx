@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 /** Protección de rutas del prototipo (equivalente al RouteGuard de SISAC). */
-export const ProtectedRoute = () => {
+export const RutaProtegida = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 

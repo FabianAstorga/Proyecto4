@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { AppShell } from '@/components/AppShell';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { LoginPage } from '@/pages/LoginPage';
-import { ComparatorPage } from '@/pages/ComparatorPage';
-import { ReportCreatePage } from '@/pages/ReportCreatePage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
+import { Layout } from '@/components/Layout';
+import { RutaProtegida } from '@/components/RutaProtegida';
+import { Login } from '@/paginas/Login';
+import { Inicio } from '@/paginas/Inicio';
+import { Comparador } from '@/paginas/Comparador';
+import { CrearReporte } from '@/paginas/CrearReporte';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -20,16 +20,17 @@ const App = () => (
     <ScrollToTop />
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<Login />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppShell />}>
-          <Route path="/comparador" element={<ComparatorPage />} />
-          <Route path="/reportes/nuevo" element={<ReportCreatePage />} />
+      <Route element={<RutaProtegida />}>
+        <Route element={<Layout />}>
+          <Route path="/inicio" element={<Inicio />} />
+          <Route path="/comparador" element={<Comparador />} />
+          <Route path="/reportes/nuevo" element={<CrearReporte />} />
         </Route>
       </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   </>
 );

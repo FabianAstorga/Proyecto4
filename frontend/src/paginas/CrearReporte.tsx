@@ -30,17 +30,16 @@ import {
   Trash2,
   UserRound,
   X,
+  Construction,
+  FileDown,
+  Lightbulb,
+  Loader2,
+  Map,
+  RotateCcw,
+  Table2,
+  Truck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import {
-  CategoryBadge,
-  CategoryIcon,
-  SeverityBadge,
-  StatusBadge,
-} from '@/components/Badges';
-import { ReportStepper, type ReportStep } from '@/components/report/ReportStepper';
-import { ReportPreview } from '@/components/report/ReportPreview';
-import { GenerationModal } from '@/components/report/GenerationModal';
 import { useAuth } from '@/context/AuthContext';
 import { reportsService } from '@/services/reports.service';
 import {
@@ -51,6 +50,8 @@ import {
   getSector,
 } from '@/mocks/data';
 import type {
+  Capture,
+  ComparisonSelection,
   GeneratedReport,
   Incident,
   IncidentCategory,
@@ -61,6 +62,7 @@ import type {
   ReportType,
   SectorId,
   SessionUser,
+  Severity,
 } from '@/types';
 import { cn, formatDateShort, formatDateTime, formatNumber } from '@/utils/format';
 import {
@@ -197,7 +199,7 @@ const SummaryRow = ({
   </div>
 );
 
-export const ReportCreatePage = () => {
+export const CrearReporte = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1575,5 +1577,1026 @@ const IncidentRow = ({
         </div>
       </div>
     </div>
+  );
+};
+
+
+
+const MarcaReporte = () => (
+  <div className="flex items-center gap-2">
+    <div className="grid h-8 w-8 place-items-center bg-[#002855] text-[8px] font-black text-white">EPA</div>
+    <div className="leading-none">
+      <p className="text-[10px] font-black uppercase tracking-tight text-white">EPA <span className="text-blue-300">WebGIS</span></p>
+      <p className="mt-0.5 text-[5px] font-bold uppercase tracking-[0.2em] text-white/45">Empresa Portuaria Arica</p>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({
+  status,
+  className,
+}: {
+  status: IncidentStatus;
+  className?: string;
+}) => {
+  const map: Record<IncidentStatus, string> = {
+    Pendiente: 'bg-red-50 text-red-700 border-red-200',
+    'En Gestión': 'bg-amber-50 text-amber-800 border-amber-200',
+    Resuelto: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  };
+  const dot: Record<IncidentStatus, string> = {
+    Pendiente: 'bg-red-500',
+    'En Gestión': 'bg-amber-500',
+    Resuelto: 'bg-emerald-500',
+  };
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 border px-2 py-1 text-[9px] font-black uppercase tracking-widest',
+        map[status],
+        className,
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', dot[status])} />
+      {status}
+    </span>
+  );
+};
+
+const SeverityBadge = ({
+  severity,
+  className,
+}: {
+  severity: Severity;
+  className?: string;
+}) => {
+  const map: Record<Severity, string> = {
+    Alta: 'bg-[#002855] text-white border-[#002855]',
+    Media: 'bg-slate-100 text-slate-700 border-slate-200',
+    Baja: 'bg-white text-slate-500 border-slate-200',
+  };
+  return (
+    <span
+      className={cn(
+        'inline-flex border px-2 py-1 text-[9px] font-black uppercase tracking-widest',
+        map[severity],
+        className,
+      )}
+    >
+      {severity}
+    </span>
+  );
+};
+
+const CategoryIcon = ({
+  category,
+  className,
+}: {
+  category: IncidentCategory;
+  className?: string;
+}) => {
+  const icons = {
+    Congestión: Truck,
+    'Daño de pavimento': Construction,
+    Residuos: Trash2,
+    Luminaria: Lightbulb,
+    Otro: AlertTriangle,
+  } as const;
+  const Icon = icons[category];
+  return <Icon className={cn('h-3.5 w-3.5', className)} />;
+};
+
+const CategoryBadge = ({
+  category,
+  className,
+}: {
+  category: IncidentCategory;
+  className?: string;
+}) => {
+  const map: Record<IncidentCategory, string> = {
+    Congestión: 'bg-blue-50 text-blue-700 border-blue-200',
+    'Daño de pavimento': 'bg-amber-50 text-amber-800 border-amber-200',
+    Residuos: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    Luminaria: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    Otro: 'bg-rose-50 text-rose-700 border-rose-200',
+  };
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 border px-2 py-1 text-[9px] font-black uppercase tracking-wider',
+        map[category],
+        className,
+      )}
+    >
+      <CategoryIcon category={category} />
+      {category}
+    </span>
+  );
+};
+
+
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  eyebrow?: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  className?: string;
+  hideClose?: boolean;
+}
+
+const Modal = ({
+  open,
+  onClose,
+  title,
+  eyebrow,
+  children,
+  footer,
+  className,
+  hideClose = false,
+}: ModalProps) => {
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8">
+          <motion.button
+            type="button"
+            aria-label="Cerrar"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 cursor-default bg-[#001a35]/80 backdrop-blur-sm"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.99 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+            className={cn(
+              'relative z-10 flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden border border-white/10 bg-white shadow-[0_30px_90px_rgba(0,0,0,0.45)]',
+              className,
+            )}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="h-1 w-full bg-gradient-to-r from-[#002855] via-blue-600 to-[#002855]" />
+
+            {(title || !hideClose) && (
+              <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 md:px-8">
+                <div>
+                  {eyebrow && (
+                    <p className="mb-1 text-[9px] font-black uppercase tracking-[0.24em] text-blue-600">
+                      {eyebrow}
+                    </p>
+                  )}
+                  {title && (
+                    <h2 className="text-xl font-black uppercase leading-tight tracking-tighter text-[#002855] md:text-2xl">
+                      {title}
+                    </h2>
+                  )}
+                </div>
+                {!hideClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-red-500"
+                    aria-label="Cerrar ventana"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </header>
+            )}
+
+            <div className="custom-scroll flex-1 overflow-y-auto">{children}</div>
+
+            {footer && (
+              <footer className="border-t border-slate-100 bg-slate-50 px-6 py-4 md:px-8">
+                {footer}
+              </footer>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+type ReportStep = 1 | 2 | 3;
+
+const STEPS = [
+  {
+    id: 1 as ReportStep,
+    label: 'Datos del informe',
+    hint: 'Metadatos y período',
+    icon: FileText,
+  },
+  {
+    id: 2 as ReportStep,
+    label: 'Selección de hallazgos',
+    hint: 'Incidencias y evidencias',
+    icon: ListChecks,
+  },
+  {
+    id: 3 as ReportStep,
+    label: 'Vista previa',
+    hint: 'Documento A4 y PDF',
+    icon: Eye,
+  },
+];
+
+const ReportStepper = ({
+  current,
+  onStepClick,
+}: {
+  current: ReportStep;
+  onStepClick: (step: ReportStep) => void;
+}) => (
+  <div className="border border-slate-200 bg-white shadow-sm">
+    <div className="grid grid-cols-1 sm:grid-cols-3">
+      {STEPS.map((step, index) => {
+        const Icon = step.icon;
+        const active = step.id === current;
+        const completed = step.id < current;
+
+        return (
+          <button
+            key={step.id}
+            type="button"
+            onClick={() => onStepClick(step.id)}
+            className={cn(
+              'relative flex items-center gap-3 border-b border-slate-100 px-4 py-4 text-left transition-colors sm:border-b-0 sm:border-r sm:last:border-r-0',
+              active
+                ? 'bg-[#002855] text-white'
+                : completed
+                  ? 'bg-emerald-50/50 text-slate-700 hover:bg-emerald-50'
+                  : 'bg-white text-slate-400 hover:bg-slate-50',
+            )}
+            aria-current={active ? 'step' : undefined}
+          >
+            {active && (
+              <motion.span
+                layoutId="report-step-bar"
+                className="absolute inset-x-0 top-0 h-1 bg-[#ffd700]"
+                transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
+              />
+            )}
+
+            <span
+              className={cn(
+                'grid h-9 w-9 shrink-0 place-items-center border text-[10px] font-black',
+                active
+                  ? 'border-white/20 bg-white/10 text-white'
+                  : completed
+                    ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-400',
+              )}
+            >
+              {completed ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            </span>
+
+            <span className="min-w-0">
+              <span className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'font-mono text-[8px] font-bold uppercase tracking-widest',
+                    active ? 'text-blue-300' : 'text-slate-300',
+                  )}
+                >
+                  0{index + 1}
+                </span>
+                <span
+                  className={cn(
+                    'text-[10px] font-black uppercase tracking-wider',
+                    active ? 'text-white' : completed ? 'text-[#002855]' : '',
+                  )}
+                >
+                  {step.label}
+                </span>
+              </span>
+              <span
+                className={cn(
+                  'mt-0.5 block text-[8px] font-bold uppercase tracking-wide',
+                  active ? 'text-blue-200/60' : 'text-slate-400',
+                )}
+              >
+                {step.hint}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const STAGES: Array<{
+  id: ReportStage;
+  label: string;
+  detail: string;
+  icon: typeof FileText;
+}> = [
+  {
+    id: 'compiling-map',
+    label: 'Compilando cartografía',
+    detail: 'Sector, capas base y marcas de hallazgos',
+    icon: Map,
+  },
+  {
+    id: 'attaching-evidence',
+    label: 'Adjuntando evidencias',
+    detail: 'Capturas A/B y miniaturas de respaldo',
+    icon: Images,
+  },
+  {
+    id: 'rendering-tables',
+    label: 'Componiendo catastro',
+    detail: 'Tabla de incidencias, severidades y estados',
+    icon: Table2,
+  },
+  {
+    id: 'generating-pdf',
+    label: 'Renderizando PDF',
+    detail: 'Membrete, firmas y numeración del informe',
+    icon: FileText,
+  },
+];
+
+interface GenerationModalProps {
+  open: boolean;
+  stage: ReportStage;
+  progress: number;
+  report: GeneratedReport | null;
+  onClose: () => void;
+  onDownload: () => void;
+  onNewReport: () => void;
+}
+
+const GenerationModal = ({
+  open,
+  stage,
+  progress,
+  report,
+  onClose,
+  onDownload,
+  onNewReport,
+}: GenerationModalProps) => {
+  const done = stage === 'done';
+  const activeIndex = STAGES.findIndex((item) => item.id === stage);
+
+  return (
+    <Modal
+      open={open}
+      onClose={done ? onClose : () => undefined}
+      hideClose={!done}
+      className="max-w-xl"
+      eyebrow={done ? 'Proceso completado' : 'Generación en curso'}
+      title={done ? 'Reporte generado' : 'Compilando informe ejecutivo'}
+    >
+      {!done ? (
+        <div className="p-6 md:p-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
+                Progreso de compilación
+              </p>
+              <p className="mt-1 text-5xl font-black leading-none tracking-tighter text-[#002855]">
+                {Math.round(progress)}
+                <span className="text-xl text-blue-500">%</span>
+              </p>
+            </div>
+            <span className="grid h-12 w-12 place-items-center border border-slate-200 bg-slate-50">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            </span>
+          </div>
+
+          <div className="mt-5 h-2 overflow-hidden bg-slate-100">
+            <motion.div
+              className="h-full bg-gradient-to-r from-[#002855] via-blue-600 to-[#ffd700]"
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
+          </div>
+
+          <div className="mt-7 space-y-2">
+            {STAGES.map((item, index) => {
+              const Icon = item.icon;
+              const completed = activeIndex > index || done;
+              const active = activeIndex === index;
+              return (
+                <div
+                  key={item.id}
+                  className={cn(
+                    'flex items-center gap-3 border px-3 py-3 transition-colors',
+                    active
+                      ? 'border-blue-200 bg-blue-50'
+                      : completed
+                        ? 'border-emerald-100 bg-emerald-50/60'
+                        : 'border-slate-100 bg-white',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'grid h-8 w-8 shrink-0 place-items-center border',
+                      completed
+                        ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+                        : active
+                          ? 'border-blue-200 bg-blue-600 text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-400',
+                    )}
+                  >
+                    {completed ? (
+                      <Check className="h-4 w-4" />
+                    ) : active ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Icon className="h-4 w-4" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        'text-[10px] font-black uppercase tracking-wider',
+                        completed
+                          ? 'text-emerald-800'
+                          : active
+                            ? 'text-[#002855]'
+                            : 'text-slate-400',
+                      )}
+                    >
+                      {item.label}
+                    </p>
+                    <p className="mt-0.5 text-[9px] font-medium text-slate-400">
+                      {item.detail}
+                    </p>
+                  </div>
+                  {completed && (
+                    <span className="font-mono text-[8px] font-bold uppercase tracking-widest text-emerald-600">
+                      OK
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-5 border-l-2 border-blue-300 bg-slate-50 px-3 py-2 text-[9px] font-medium leading-relaxed text-slate-500">
+            El procesamiento se ejecuta en el navegador para esta demostración. En
+            producción, el backend ASP.NET Core compilará el PDF con QuestPDF y
+            devolverá el archivo desde <span className="font-mono">/api/v1/reportes/</span>.
+          </p>
+        </div>
+      ) : (
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col items-center text-center">
+            <motion.span
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', damping: 16, stiffness: 200 }}
+              className="grid h-20 w-20 place-items-center rounded-full border-4 border-emerald-100 bg-emerald-50 text-emerald-600"
+            >
+              <CheckCircle2 className="h-10 w-10" />
+            </motion.span>
+            <h3 className="mt-4 text-2xl font-black uppercase leading-none tracking-tighter text-[#002855]">
+              Informe listo
+            </h3>
+            <p className="mt-2 max-w-sm text-xs font-medium leading-relaxed text-slate-500">
+              El documento fue compilado y guardado en el historial local del
+              prototipo. Puedes descargarlo en formato PDF.
+            </p>
+          </div>
+
+          <div className="mt-6 border border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center bg-red-50 text-red-600">
+                  <FileDown className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[10px] font-black uppercase tracking-wider text-[#002855]">
+                    {report?.fileName}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-widest text-slate-400">
+                    {report?.numero} · PDF · {report?.sizeKb ?? 0} KB
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 bg-emerald-50 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-emerald-700">
+                Listo
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-px bg-slate-200">
+              {[
+                { label: 'Sector', value: report?.sector ?? '—' },
+                { label: 'Hallazgos', value: String(report?.totalIncidencias ?? 0) },
+                {
+                  label: 'Emitido',
+                  value: report ? formatDateTime(report.createdAt) : '—',
+                },
+              ].map((item) => (
+                <div key={item.label} className="bg-white px-3 py-2.5">
+                  <p className="text-[7px] font-black uppercase tracking-[0.16em] text-slate-400">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-[9px] font-bold leading-snug text-[#002855]">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={onDownload}
+              className="flex items-center justify-center gap-2 bg-[#003385] px-4 py-3.5 text-[9px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#002a66]"
+            >
+              <Download className="h-4 w-4" />
+              Descargar PDF
+            </button>
+            <button
+              type="button"
+              onClick={onNewReport}
+              className="flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-3.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Nuevo reporte
+            </button>
+          </div>
+
+          <p className="mt-4 text-center text-[8px] font-medium leading-relaxed text-slate-400">
+            La descarga usa la impresión del navegador (Guardar como PDF). El informe
+            se imprimirá en tamaño A4, sin encabezados ni pies del navegador.
+          </p>
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+const STATUS_COLOR: Record<Incident['estado'], string> = {
+  Pendiente: '#dc2626',
+  'En Gestión': '#d97706',
+  Resuelto: '#059669',
+};
+
+const PIN_POSITIONS = [
+  { x: 26, y: 58 },
+  { x: 48, y: 34 },
+  { x: 63, y: 63 },
+  { x: 76, y: 40 },
+  { x: 40, y: 74 },
+  { x: 70, y: 22 },
+];
+
+const SectionTitle = ({ number, title }: { number: string; title: string }) => (
+  <div className="mb-[3mm] flex items-center gap-2 border-b border-slate-200 pb-[1.5mm]">
+    <span className="grid h-[6mm] w-[6mm] place-items-center bg-[#002855] text-[8px] font-black text-white">
+      {number}
+    </span>
+    <h2 className="text-[10px] font-black uppercase tracking-[0.18em] text-[#002855]">
+      {title}
+    </h2>
+  </div>
+);
+
+interface ReportPreviewProps {
+  meta: ReportMeta;
+  incidents: Incident[];
+  comparison: ComparisonSelection | null;
+  includeComparison: boolean;
+  reportNumber: string;
+}
+
+const ReportPreview = ({
+  meta,
+  incidents,
+  comparison,
+  includeComparison,
+  reportNumber,
+}: ReportPreviewProps) => {
+  const sector = getSector(meta.sectorId);
+  const comparisonSector = comparison?.sectorId ?? meta.sectorId;
+  const comparisonCaptures = CAPTURES.filter(
+    (capture) => capture.sectorId === comparisonSector,
+  );
+
+  const baseA = comparison
+    ? CAPTURES.find((capture) => capture.id === comparison.captureAId) ??
+      comparisonCaptures[0]
+    : comparisonCaptures[0];
+  const baseB = comparison
+    ? CAPTURES.find((capture) => capture.id === comparison.captureBId) ??
+      comparisonCaptures[1] ??
+      comparisonCaptures[0]
+    : comparisonCaptures[1] ?? comparisonCaptures[0];
+
+  const captureA = baseA
+    ? { ...baseA, fecha: comparison?.captureADate ?? baseA.fecha }
+    : undefined;
+  const captureB = baseB
+    ? { ...baseB, fecha: comparison?.captureBDate ?? baseB.fecha }
+    : undefined;
+
+  const showComparison = includeComparison && Boolean(captureA && captureB);
+  const evidence = (captureB ?? captureA) as Capture;
+
+  const counts = {
+    total: incidents.length,
+    pendientes: incidents.filter((i) => i.estado === 'Pendiente').length,
+    gestion: incidents.filter((i) => i.estado === 'En Gestión').length,
+    resueltos: incidents.filter((i) => i.estado === 'Resuelto').length,
+    alta: incidents.filter((i) => i.severidad === 'Alta').length,
+  };
+
+  const section = (base: number) =>
+    String(showComparison ? base : base - 1).padStart(2, '0');
+
+  return (
+    <article
+      id="report-print-area"
+      className="print-exact mx-auto flex min-h-[297mm] w-[210mm] flex-col bg-white text-slate-800 shadow-2xl"
+    >
+      {/* Membrete */}
+      <header className="bg-[#001a35] px-[11mm] py-[7mm] text-white">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <MarcaReporte />
+            <div className="h-10 w-px bg-white/20" />
+            <div>
+              <p className="text-[6.5px] font-black uppercase tracking-[0.28em] text-blue-300">
+                Empresa Portuaria Arica
+              </p>
+              <p className="mt-0.5 text-[9px] font-black uppercase tracking-tight text-white">
+                Gerencia de TI y Ciberseguridad
+              </p>
+              <p className="mt-0.5 text-[6px] font-medium uppercase tracking-[0.18em] text-white/45">
+                Monitoreo e inspección geoespacial · WebGIS
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <p className="text-[6px] font-black uppercase tracking-[0.24em] text-blue-300">
+              Informe ejecutivo
+            </p>
+            <p className="mt-1 font-mono text-[10px] font-bold text-white">
+              {reportNumber}
+            </p>
+            <p className="mt-1 text-[6px] text-white/45">
+              Emitido: {formatDateTime(new Date().toISOString())}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div className="px-[11mm] py-[8mm]">
+        {/* Título */}
+        <div className="border-b-4 border-[#002855] pb-[4mm]">
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <span className="bg-blue-600 px-1.5 py-0.5 text-[6px] font-black uppercase tracking-widest text-white">
+              {meta.tipo}
+            </span>
+            <span className="border border-slate-200 px-1.5 py-0.5 text-[6px] font-black uppercase tracking-widest text-slate-500">
+              {sector?.nombre}
+            </span>
+            <span className="border border-slate-200 px-1.5 py-0.5 text-[6px] font-black uppercase tracking-widest text-slate-500">
+              {formatDateShort(meta.fechaDesde)} — {formatDateShort(meta.fechaHasta)}
+            </span>
+          </div>
+          <h1 className="text-balance text-[20px] font-black uppercase leading-[1.02] tracking-tighter text-[#002855]">
+            {meta.titulo}
+          </h1>
+          <p className="mt-2 max-w-[150mm] text-[7.5px] font-medium leading-relaxed text-slate-500">
+            Documento consolidado de hallazgos georreferenciados y evidencia
+            fotográfica para la supervisión de la infraestructura portuaria.
+          </p>
+        </div>
+
+        {/* Ficha */}
+        <div className="mt-[4mm] grid grid-cols-4 gap-px border border-slate-200 bg-slate-200">
+          {[
+            { label: 'Sector inspeccionado', value: sector?.nombre ?? '—' },
+            { label: 'Superficie', value: sector?.superficie ?? '—' },
+            { label: 'Elaborado por', value: meta.elaboradoPor },
+            { label: 'Destinatario', value: meta.destinatario },
+          ].map((item) => (
+            <div key={item.label} className="bg-white px-2 py-2">
+              <p className="text-[5.5px] font-black uppercase tracking-[0.16em] text-slate-400">
+                {item.label}
+              </p>
+              <p className="mt-1 text-[6.5px] font-bold leading-snug text-[#002855]">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* 1. Resumen */}
+        <section className="mt-[6mm] break-inside-avoid">
+          <SectionTitle number="01" title="Resumen ejecutivo" />
+          <p className="text-[7.5px] font-medium leading-[1.75] text-slate-600">
+            El presente informe consolida <strong>{counts.total} hallazgos</strong>{' '}
+            detectados en <strong>{sector?.nombre}</strong> durante el período
+            comprendido entre el {formatDateShort(meta.fechaDesde)} y el{' '}
+            {formatDateShort(meta.fechaHasta)}. Del total, {counts.pendientes} se
+            encuentran en estado Pendiente, {counts.gestion} en Gestión y{' '}
+            {counts.resueltos} resueltos. Se identificaron{' '}
+            <strong>{counts.alta} incidencias de severidad alta</strong> que requieren
+            coordinación con las áreas operativas y el concesionario.
+          </p>
+
+          {counts.alta > 0 && (
+            <div className="mt-[3mm] border-l-[3px] border-red-500 bg-red-50 px-3 py-2">
+              <p className="text-[6.5px] font-black uppercase tracking-[0.14em] text-red-700">
+                Atención prioritaria
+              </p>
+              <p className="mt-1 text-[7px] font-medium leading-relaxed text-red-700/80">
+                Existen {counts.alta} hallazgos de severidad alta. Se recomienda
+                verificar su estado en terreno antes del cierre del período y dejar
+                registro fotográfico de la intervención.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* 2. Indicadores */}
+        <section className="mt-[6mm] break-inside-avoid">
+          <SectionTitle number="02" title="Indicadores del período" />
+          <div className="grid grid-cols-5 gap-px border border-slate-200 bg-slate-200">
+            {[
+              { label: 'Total', value: counts.total, color: '#002855' },
+              { label: 'Pendientes', value: counts.pendientes, color: '#dc2626' },
+              { label: 'En Gestión', value: counts.gestion, color: '#d97706' },
+              { label: 'Resueltos', value: counts.resueltos, color: '#059669' },
+              { label: 'Severidad alta', value: counts.alta, color: '#7c3aed' },
+            ].map((kpi) => (
+              <div key={kpi.label} className="bg-white px-2 py-2 text-center">
+                <p
+                  className="text-[16px] font-black leading-none tracking-tighter"
+                  style={{ color: kpi.color }}
+                >
+                  {String(kpi.value).padStart(2, '0')}
+                </p>
+                <p className="mt-1 text-[5.5px] font-black uppercase tracking-[0.12em] text-slate-400">
+                  {kpi.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 3. Comparación temporal */}
+        {showComparison && (
+          <section className="mt-[6mm] break-inside-avoid">
+            <SectionTitle number="03" title="Comparación temporal de capturas" />
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { capture: captureA!, label: 'A', tone: 'bg-blue-600' },
+                { capture: captureB!, label: 'B', tone: 'bg-[#d4a824]' },
+              ].map(({ capture, label, tone }) => (
+                <figure key={label} className="border border-slate-200 bg-slate-50">
+                  <div className="relative h-[46mm] overflow-hidden">
+                    <img
+                      src={capture.src}
+                      alt={`Captura ${label}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <span
+                      className={`absolute left-1.5 top-1.5 grid h-4 w-4 place-items-center text-[6px] font-black text-white ${tone}`}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                  <figcaption className="flex items-center justify-between gap-2 px-2 py-1.5">
+                    <span className="text-[6px] font-black uppercase tracking-widest text-slate-500">
+                      {formatDateShort(capture.fecha)} · {capture.hora}
+                    </span>
+                    <span className="font-mono text-[5.5px] text-slate-400">
+                      {capture.altitud.toFixed(1)} m
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            <p className="mt-2 text-[6.5px] font-medium leading-relaxed text-slate-500">
+              El contraste visual evidencia cambios en la ocupación de bermas,
+              condición del pavimento y presencia de residuos. La evaluación se
+              realizó sobre capturas del mismo sector y encuadre.
+            </p>
+          </section>
+        )}
+
+        {/* Cartografía */}
+        <section className="mt-[6mm] break-inside-avoid">
+          <SectionTitle
+            number={section(4)}
+            title="Cartografía de hallazgos"
+          />
+          <div className="relative h-[56mm] overflow-hidden border border-slate-200 bg-slate-100">
+            <img
+              src={evidence.src}
+              alt={`Cartografía de ${sector?.nombre}`}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[#001a35]/10" />
+
+            {incidents.slice(0, 6).map((incident, index) => {
+              const position = PIN_POSITIONS[index % PIN_POSITIONS.length];
+              return (
+                <div
+                  key={incident.id}
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                >
+                  <span
+                    className="grid h-4 w-4 place-items-center rounded-full border-2 border-white text-[5px] font-black text-white shadow-lg"
+                    style={{ backgroundColor: STATUS_COLOR[incident.estado] }}
+                  >
+                    {index + 1}
+                  </span>
+                </div>
+              );
+            })}
+
+            <div className="absolute bottom-1.5 left-1.5 border border-white/20 bg-[#001a35]/85 px-2 py-1.5">
+              <p className="text-[5.5px] font-black uppercase tracking-[0.16em] text-white/60">
+                Referencias
+              </p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {(
+                  [
+                    ['Pendiente', STATUS_COLOR.Pendiente],
+                    ['En Gestión', STATUS_COLOR['En Gestión']],
+                    ['Resuelto', STATUS_COLOR.Resuelto],
+                  ] as const
+                ).map(([label, color]) => (
+                  <span
+                    key={label}
+                    className="flex items-center gap-1 text-[5px] font-bold uppercase tracking-wider text-white/80"
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="absolute right-1.5 top-1.5 border border-white/20 bg-[#001a35]/85 px-2 py-1 font-mono text-[5px] uppercase tracking-widest text-white/70">
+              {sector?.nombre} · {sector?.superficie}
+            </div>
+          </div>
+        </section>
+
+        {/* Catastro */}
+        <section className="mt-[6mm] break-inside-avoid">
+          <SectionTitle
+            number={section(5)}
+            title="Catastro de incidencias"
+          />
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-[#002855] text-white">
+                {['N°', 'Código', 'Categoría', 'Fecha', 'Severidad', 'Estado'].map(
+                  (header) => (
+                    <th
+                      key={header}
+                      className="px-1.5 py-1.5 text-[5.5px] font-black uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {incidents.slice(0, 12).map((incident, index) => (
+                <tr
+                  key={incident.id}
+                  className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}
+                >
+                  <td className="border-b border-slate-100 px-1.5 py-1.5 text-[6px] font-black text-slate-400">
+                    {String(index + 1).padStart(2, '0')}
+                  </td>
+                  <td className="border-b border-slate-100 px-1.5 py-1.5 font-mono text-[5.5px] font-bold text-[#002855]">
+                    {incident.codigo}
+                  </td>
+                  <td className="border-b border-slate-100 px-1.5 py-1.5 text-[6px] font-bold uppercase text-slate-600">
+                    {incident.categoria}
+                  </td>
+                  <td className="border-b border-slate-100 px-1.5 py-1.5 text-[6px] text-slate-500">
+                    {formatDateShort(incident.fecha)}
+                  </td>
+                  <td className="border-b border-slate-100 px-1.5 py-1.5 text-[6px] font-black uppercase text-slate-600">
+                    {incident.severidad}
+                  </td>
+                  <td className="border-b border-slate-100 px-1.5 py-1.5">
+                    <span
+                      className="inline-flex items-center gap-1 text-[5.5px] font-black uppercase tracking-wider"
+                      style={{ color: STATUS_COLOR[incident.estado] }}
+                    >
+                      <span
+                        className="h-1 w-1 rounded-full"
+                        style={{ backgroundColor: STATUS_COLOR[incident.estado] }}
+                      />
+                      {incident.estado}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {incidents.length > 12 && (
+            <p className="mt-1 text-right text-[5.5px] font-bold uppercase tracking-widest text-slate-400">
+              + {incidents.length - 12} incidencias anexas en el sistema
+            </p>
+          )}
+        </section>
+
+        {/* Observaciones */}
+        <section className="mt-[6mm] break-inside-avoid">
+          <SectionTitle
+            number={section(6)}
+            title="Observaciones y recomendaciones"
+          />
+          <p className="text-[7px] font-medium leading-[1.7] text-slate-600">
+            {meta.observaciones ||
+              'Sin observaciones adicionales para el período informado.'}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {[
+              'Programar una inspección en terreno de los puntos clasificados con severidad alta.',
+              'Coordinar con las áreas operativas y el concesionario el despeje de bermas y la limpieza de residuos.',
+              'Verificar la evolución de los hallazgos en el próximo vuelo programado y actualizar su estado.',
+            ].map((recommendation) => (
+              <li
+                key={recommendation}
+                className="flex gap-1.5 text-[6.5px] font-medium leading-relaxed text-slate-500"
+              >
+                <span className="mt-[1.5px] h-1 w-1 shrink-0 bg-blue-600" />
+                {recommendation}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Firmas */}
+        <section className="mt-[7mm] grid grid-cols-3 gap-6 break-inside-avoid">
+          {[
+            { role: 'Elaborado por', name: meta.elaboradoPor },
+            { role: 'Revisado por', name: 'Jorge Bernal Navarrete' },
+            { role: 'Aprobado por', name: 'Gerencia EPA' },
+          ].map((signature) => (
+            <div key={signature.role} className="text-center">
+              <div className="mx-auto h-[10mm] border-b border-slate-300" />
+              <p className="mt-1.5 text-[5.5px] font-black uppercase tracking-[0.16em] text-slate-400">
+                {signature.role}
+              </p>
+              <p className="mt-0.5 text-[6px] font-bold text-[#002855]">
+                {signature.name}
+              </p>
+            </div>
+          ))}
+        </section>
+      </div>
+
+      {/* Pie */}
+      <footer className="mt-auto border-t border-slate-200 px-[11mm] py-[4mm]">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-[5.5px] font-bold uppercase tracking-[0.16em] text-slate-400">
+            Documento generado desde EPA WebGIS · Datos del prototipo
+          </p>
+          <p className="font-mono text-[5.5px] uppercase tracking-widest text-slate-400">
+            {reportNumber} · Página 1 de 1
+          </p>
+        </div>
+        <div className="mt-2 h-1 w-full bg-gradient-to-r from-[#002855] via-blue-500 to-[#ffd700]" />
+      </footer>
+    </article>
   );
 };

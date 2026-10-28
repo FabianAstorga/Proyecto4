@@ -9,7 +9,7 @@ import { GripVertical, Grid3X3, RotateCcw } from 'lucide-react';
 import type { Capture } from '@/types';
 import { cn, formatDateShort } from '@/utils/format';
 
-export interface CurtainMarker {
+export interface MarcadorCortina {
   id: string;
   x: number;
   y: number;
@@ -17,10 +17,10 @@ export interface CurtainMarker {
   color?: string;
 }
 
-interface CurtainComparatorProps {
+interface CortinaProps {
   captureA: Capture;
   captureB: Capture;
-  markers?: CurtainMarker[];
+  markers?: MarcadorCortina[];
   className?: string;
 }
 
@@ -29,12 +29,12 @@ interface CurtainComparatorProps {
  * Dos capturas superpuestas; la capa "A" se recorta con clip-path.
  * Funciona con ratón, touch y teclado (flechas / Home / End).
  */
-export const CurtainComparator = ({
+export const Cortina = ({
   captureA,
   captureB,
   markers = [],
   className,
-}: CurtainComparatorProps) => {
+}: CortinaProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(50);
   const [dragging, setDragging] = useState(false);

@@ -4,7 +4,7 @@ Frontend del sistema **WebGIS de monitoreo e inspección geoespacial** para la
 **Empresa Portuaria Arica (EPA)** y la **ZEAP**, integrado en la solución Aspire `WebGIS`.
 Cubre tres artefactos de interfaz:
 
-1. **Acceso institucional** con portal y carrusel de capturas aéreas.
+1. **Acceso institucional** con portal, fotografía del puerto y carrusel de reportes.
 2. **Comparador temporal tipo cortina** con selección de capturas A/B.
 3. **Creación de reporte ejecutivo** con vista previa A4 y generación simulada de PDF.
 
@@ -31,6 +31,7 @@ Guion corto para presentar los tres artefactos: [`docs/GUION-DEMOSTRACION.md`](d
 | Ruta | Artefacto | Requisito de referencia |
 |---|---|---|
 | `/login` | Portal + carrusel + acceso y recuperación simulada | RF-10 / CU-01 |
+| `/inicio` | Home con accesos a Comparador, Informes e Ingresar Imágenes, más contadores | RF-10 / CU-01 |
 | `/comparador` | Selección de capturas y cortina deslizadora A/B | RF-06 / CU-05 |
 | `/reportes/nuevo` | Asistente de reporte ejecutivo en 3 pasos | RF-09 / CU-08 |
 
@@ -38,7 +39,7 @@ Rutas auxiliares:
 
 - `/` redirige a `/login`.
 - Las rutas internas están protegidas por sesión simulada; sin sesión redirigen a `/login`.
-- Cualquier ruta desconocida muestra una pantalla 404 con la identidad del prototipo.
+- Cualquier ruta desconocida redirige a `/login`.
 
 ## 2. Ejecución
 
@@ -137,24 +138,23 @@ Dentro de `frontend/`:
 ├─ docs/screenshots/            # capturas de los tres artefactos
 ├─ src/
 │  ├─ components/
-│  │  ├─ AppShell.tsx           # navbar + sesión + layout autenticado
-│  │  ├─ Badges.tsx             # estados, severidades, categorías
-│  │  ├─ Brand.tsx              # marca EPA WebGIS (SVG propio)
-│  │  ├─ CurtainComparator.tsx  # cortina accesible (mouse/touch/teclado)
-│  │  ├─ Modal.tsx
-│  │  ├─ PageHeader.tsx         # cabecera con carrusel de fondo opcional
-│  │  ├─ ProtectedRoute.tsx
-│  │  └─ report/
-│  │     ├─ GenerationModal.tsx # progreso y confirmación de generación
-│  │     ├─ ReportPreview.tsx   # documento A4 imprimible
-│  │     └─ ReportStepper.tsx
+│  │  ├─ Comparador/
+│  │  │  ├─ Cortina.tsx                 # cortina interactiva
+│  │  │  ├─ SelectorLugar.tsx           # lista de lugares
+│  │  │  ├─ SelectorCaptura.tsx         # fecha + foto A/B
+│  │  │  ├─ ImpresionComparacion.tsx    # documento de comparación
+│  │  │  └─ index.ts
+│  │  ├─ Layout.tsx                     # layout general autenticado
+│  │  ├─ Navbar.tsx                     # cabecera/navegación
+│  │  ├─ PageHeader.tsx                 # cabecera con carrusel opcional
+│  │  └─ RutaProtegida.tsx
 │  ├─ context/AuthContext.tsx
-│  ├─ mocks/data.ts             # sectores, capturas, vuelos e incidencias
-│  ├─ pages/
-│  │  ├─ LoginPage.tsx
-│  │  ├─ ComparatorPage.tsx
-│  │  ├─ ReportCreatePage.tsx
-│  │  └─ NotFoundPage.tsx
+│  ├─ mocks/data.ts                     # sectores, capturas, vuelos e incidencias
+│  ├─ paginas/
+│  │  ├─ Login.tsx
+│  │  ├─ Inicio.tsx                     # home con accesos y contadores
+│  │  ├─ Comparador.tsx
+│  │  └─ CrearReporte.tsx               # página + componentes del reporte
 │  ├─ services/
 │  │  ├─ http.ts                # fetch tipado + token (listo para ASP.NET)
 │  │  ├─ auth.service.ts
@@ -225,10 +225,15 @@ Los tipos de `src/types/index.ts` reflejan las tablas definidas en el documento 
 - **Estética institucional portuaria:** azul marino `#001a35` / `#002855`, acento azul
   `#2563eb`, amarillo `#ffd700`, tipografía Inter con títulos en mayúsculas y tracking
   compacto, esquinas rectas en las tarjetas y curvas suaves en la navegación.
-- **Login + portal:** carrusel de fondo con cinco sectores, marca EPA WebGIS, título del
-  proyecto, sector visible y reloj en vivo. El acceso es un panel lateral de pantalla
-  completa que se abre y cierra desde el botón del cabezal; el formulario contiene solo
-  correo, contraseña, **Ingresar** y recuperación de contraseña.
+- **Login + portal:** portada con fotografía del puerto, movimiento lento de cámara
+  (Ken Burns), marca EPA WebGIS, título del proyecto y reloj en vivo. Al bajar se llega a
+  una segunda sección con carrusel horizontal de reportes recientes. El acceso es un panel
+  lateral de pantalla completa que se abre y cierra desde el botón del cabezal; el
+  formulario contiene solo correo, contraseña, **Ingresar** y recuperación de contraseña.
+- **Home:** fondo animado celeste/verde/amarillo, tres accesos grandes centrados con
+  icono, nombre y flecha (Comparador, Informes e Ingresar Imágenes), y tres contadores en píldoras
+  blancas. La navbar concentra Comparador e Informes; el engranaje junto al nombre del
+  usuario abre el menú de cuenta y reemplaza el antiguo botón **Cuenta**.
 - **Comparador:** selección de lugar y rango de fechas, asignación de captura anterior
   (A) y posterior (B), cortina con `clip-path`, porcentaje visible, soporte de teclado
   (`←`/`→`, `Home`/`End`), retícula y reinicio. Las acciones finales son **Ingresar en

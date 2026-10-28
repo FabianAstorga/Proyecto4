@@ -1,40 +1,114 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ChevronDown,
   Columns2,
-  FilePlus2,
+  FileText,
   LogOut,
   Menu,
+  Settings,
   ShieldCheck,
   UserRound,
   X,
 } from 'lucide-react';
-import { Brand } from './Brand';
-import { DemoBadge } from './Badges';
 import { useAuth } from '@/context/AuthContext';
 import { ui } from '@/utils/SwalService';
 import { cn, roleLabel } from '@/utils/format';
+interface MarcaProps {
+  tone?: 'light' | 'dark';
+  size?: 'sm' | 'md' | 'lg';
+  showSubtitle?: boolean;
+  className?: string;
+}
+
+const SIZES = {
+  sm: { box: 'h-9 w-9', title: 'text-base', sub: 'text-[7px]' },
+  md: { box: 'h-11 w-11', title: 'text-xl', sub: 'text-[8px]' },
+  lg: { box: 'h-14 w-14', title: 'text-2xl', sub: 'text-[9px]' },
+};
+
+/** Identidad propia del prototipo: sin logos ni material de terceros. */
+const Marca = ({
+  tone = 'light',
+  size = 'md',
+  showSubtitle = true,
+  className,
+}: MarcaProps) => {
+  const s = SIZES[size];
+  const isLight = tone === 'light';
+
+  return (
+    <div className={cn('flex items-center gap-3 select-none', className)}>
+      <div
+        className={cn(
+          'relative grid shrink-0 place-items-center overflow-hidden border shadow-lg',
+          s.box,
+          isLight ? 'border-white/20' : 'border-[#003B5C]/15',
+        )}
+        style={{ backgroundColor: '#003B5C' }}
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 64 64" className="h-full w-full">
+          <rect width="64" height="64" fill="#003B5C" />
+          <rect x="0" y="52" width="64" height="12" fill="#0F766E" />
+          <path
+            d="M14 14v32M14 17h30l-5 6H14"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="3"
+          />
+          <path d="M41 23v9" stroke="#7DD3FC" strokeWidth="2.5" />
+          <circle cx="41" cy="35" r="3" fill="none" stroke="#34D399" strokeWidth="2.5" />
+          <rect x="12" y="42" width="12" height="5" fill="#ffffff" />
+          <rect x="27" y="42" width="12" height="5" fill="#7DD3FC" />
+          <rect x="20" y="49" width="20" height="5" fill="#34D399" />
+        </svg>
+      </div>
+
+      <div className="min-w-0 leading-none">
+        <div
+          className={cn(
+            'flex items-baseline gap-1.5 font-black uppercase tracking-tighter',
+            s.title,
+            isLight ? 'text-white' : 'text-[#003B5C]',
+          )}
+        >
+          EPA
+          <span className={isLight ? 'text-[#7DD3FC]' : 'text-[#0284C7]'}>WebGIS</span>
+        </div>
+        {showSubtitle && (
+          <p
+            className={cn(
+              'mt-1 font-bold uppercase tracking-[0.22em]',
+              s.sub,
+              isLight ? 'text-white/45' : 'text-slate-400',
+            )}
+          >
+            Empresa Portuaria Arica
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 const NAV_ITEMS = [
   {
     id: 'comparador',
     label: 'Comparador',
     path: '/comparador',
-    code: 'RF-06',
     icon: Columns2,
   },
   {
     id: 'reportes',
-    label: 'Nuevo reporte',
+    label: 'Informes',
     path: '/reportes/nuevo',
-    code: 'RF-09',
-    icon: FilePlus2,
+    icon: FileText,
   },
 ];
 
-export const AppShell = () => {
+export const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,12 +126,12 @@ export const AppShell = () => {
     navigate('/login', { replace: true });
   };
 
+  
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="fixed inset-x-0 top-0 z-[100] h-16">
-        <div className="absolute inset-0 rounded-b-2xl border-b border-white/5 bg-[#001a35]/92 backdrop-blur-md" />
+<header className="fixed inset-x-0 top-0 z-[100] h-16">
+        <div className="absolute inset-0 rounded-b-2xl border-b border-white/5 bg-[#002B45]/95 backdrop-blur-md" />
         <div
-          className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"
+          className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-[#7DD3FC]/50 to-transparent"
           aria-hidden="true"
         />
 
@@ -65,11 +139,11 @@ export const AppShell = () => {
           <div className="flex h-full items-center gap-6">
             <button
               type="button"
-              onClick={() => navigate('/comparador')}
+              onClick={() => navigate('/inicio')}
               className="shrink-0"
-              aria-label="Ir al comparador"
+              aria-label="Ir al inicio"
             >
-              <Brand tone="light" size="sm" />
+              <Marca tone="light" size="sm" />
             </button>
 
             <nav className="ml-1 hidden h-12 items-center gap-1 rounded-2xl border border-white/5 bg-white/[0.04] p-1 lg:flex">
@@ -90,18 +164,15 @@ export const AppShell = () => {
                     {active && (
                       <motion.span
                         layoutId="epa-nav-pill"
-                        className="absolute inset-0 rounded-xl border border-white/10 bg-[#000b17] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                        className="absolute inset-0 rounded-xl border border-white/10 bg-[#003B5C] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                         transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
                       />
                     )}
                     <span className="relative flex items-center gap-2">
                       <Icon
-                        className={cn('h-3.5 w-3.5', active ? 'text-blue-400' : '')}
+                        className={cn('h-3.5 w-3.5', active ? 'text-[#7DD3FC]' : '')}
                       />
                       {item.label}
-                      <span className="hidden font-mono text-[8px] text-white/25 xl:inline">
-                        {item.code}
-                      </span>
                     </span>
                   </NavLink>
                 );
@@ -110,16 +181,12 @@ export const AppShell = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-5">
-            <div className="hidden xl:block">
-              <DemoBadge />
-            </div>
-
             <div className="hidden items-center gap-3 border-l border-white/10 pl-4 md:flex">
               <div className="leading-none">
                 <p className="text-[10px] font-black uppercase tracking-widest text-white">
                   {user?.nombre ?? 'Invitado'}
                 </p>
-                <p className="mt-1 flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.16em] text-blue-300/70">
+                <p className="mt-1 flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#7DD3FC]/70">
                   <ShieldCheck className="h-2.5 w-2.5" />
                   {roleLabel(user?.rol)} · EPA
                 </p>
@@ -130,17 +197,13 @@ export const AppShell = () => {
               <button
                 type="button"
                 onClick={() => setMenuOpen((open) => !open)}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white/60 transition-colors hover:border-white/20 hover:text-white"
+                aria-label="Cuenta"
+                title="Cuenta"
+                className="grid h-8 w-8 place-items-center bg-transparent text-white/60 transition-colors hover:text-white"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                Cuenta
-                <ChevronDown
-                  className={cn(
-                    'h-3 w-3 transition-transform',
-                    menuOpen && 'rotate-180',
-                  )}
-                />
+                <Settings className="h-4 w-4" />
               </button>
 
               <AnimatePresence>
@@ -198,13 +261,15 @@ export const AppShell = () => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute inset-x-0 top-16 rounded-b-2xl border-b border-white/10 bg-[#001a35] p-4 shadow-2xl lg:hidden"
+              className="absolute inset-x-0 top-16 rounded-b-2xl border-b border-white/10 bg-[#002B45] p-4 shadow-2xl lg:hidden"
             >
-              <div className="mb-3 flex items-center justify-between">
-                <DemoBadge />
-                <span className="text-[9px] font-black uppercase tracking-widest text-blue-300">
-                  {roleLabel(user?.rol)}
-                </span>
+              <div className="mb-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white">
+                  {user?.nombre ?? 'Invitado'}
+                </p>
+                <p className="mt-1 text-[9px] font-black uppercase tracking-widest text-[#7DD3FC]">
+                  {roleLabel(user?.rol)} · EPA
+                </p>
               </div>
               <nav className="space-y-1">
                 {NAV_ITEMS.map((item) => {
@@ -221,15 +286,12 @@ export const AppShell = () => {
                       className={cn(
                         'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest',
                         active
-                          ? 'border-white/10 bg-[#000b17] text-white'
+                          ? 'border-white/10 bg-[#003B5C] text-white'
                           : 'border-transparent text-white/60 hover:bg-white/[0.04]',
                       )}
                     >
-                      <Icon className="h-4 w-4 text-blue-400" />
+                      <Icon className="h-4 w-4 text-[#7DD3FC]" />
                       {item.label}
-                      <span className="ml-auto font-mono text-[8px] text-white/30">
-                        {item.code}
-                      </span>
                     </button>
                   );
                 })}
@@ -246,21 +308,5 @@ export const AppShell = () => {
           )}
         </AnimatePresence>
       </header>
-
-      <main className="min-h-screen">
-        <Outlet />
-      </main>
-
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-[1500px] flex-col items-start justify-between gap-2 px-5 py-5 md:flex-row md:items-center md:px-8">
-          <p className="text-[9px] font-black uppercase tracking-[0.22em] text-slate-400">
-            Empresa Portuaria Arica · Gerencia de TI y Ciberseguridad
-          </p>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-slate-400">
-            Prototipo WebGIS · Parte 2 · {new Date().getFullYear()}
-          </p>
-        </div>
-      </footer>
-    </div>
   );
 };

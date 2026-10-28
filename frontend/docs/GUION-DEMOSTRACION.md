@@ -25,15 +25,19 @@ Abrir la URL de Vite (por defecto `http://localhost:5173/login`).
 
 **Qué mostrar**
 
-1. Mostrar la portada: carrusel a pantalla completa de cinco sectores, marca **EPA WebGIS**,
-   título del proyecto, sector visible y reloj con fecha y hora en vivo.
-2. Presionar **Acceder** en el extremo superior derecho. El panel de acceso se desliza y
+1. Mostrar la portada: fotografía del puerto con movimiento lento de cámara, marca **EPA
+   WebGIS**, título del proyecto, sector visible y reloj con fecha y hora en vivo.
+2. Bajar con el scroll o deslizar: la segunda sección muestra el carrusel de reportes
+   recientes con tarjetas flotantes. No hay modal ni tercera sección.
+3. Presionar **Acceder** en el extremo superior derecho. El panel de acceso se desliza y
    ocupa toda la pantalla; el mismo botón cambia a **Cerrar**.
-3. El formulario es deliberadamente mínimo: correo, contraseña, **Ingresar** y
+4. El formulario es deliberadamente mínimo: correo, contraseña, **Ingresar** y
    **¿Olvidaste tu contraseña?**. Ingresar cualquier correo válido y una contraseña de 4+
    caracteres.
-4. Mostrar el flujo de recuperación → código de demostración `482913` → nueva contraseña.
-5. Cerrar el panel para volver al carrusel.
+5. Al ingresar se abre el **Home**, con los accesos **Comparador**, **Informes** e
+   **Ingresar Imágenes**, además de los contadores de actividad.
+6. Mostrar el flujo de recuperación → código de demostración `482913` → nueva contraseña.
+7. Cerrar el panel para volver al carrusel.
 
 **Mensaje para la presentación**
 
