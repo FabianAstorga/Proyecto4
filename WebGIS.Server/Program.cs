@@ -1,3 +1,5 @@
+using WebGIS.Server;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
@@ -5,6 +7,7 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
+builder.Services.AddScoped<ComparadorService>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -38,6 +41,7 @@ api.MapGet("weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 app.MapDefaultEndpoints();
+app.MapComparadorEndpoints();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

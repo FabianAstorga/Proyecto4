@@ -15,6 +15,8 @@
     "mock:images": "node scripts/generate-mock-aerials.mjs"
   },
   "dependencies": {
+    "@formkit/auto-animate": "^0.10.1",
+    "@number-flow/react": "^0.6.2",
     "clsx": "^2.1.1",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",

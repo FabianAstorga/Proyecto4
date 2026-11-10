@@ -39,7 +39,9 @@ import {
   Table2,
   Truck,
 } from 'lucide-react';
-import { PageHeader } from '@/components/PageHeader';
+import { createPortal } from 'react-dom';
+import { ModuloButton } from '@/components/ModuloButton';
+import { ModuloHeader } from '@/components/ModuloHeader';
 import { useAuth } from '@/context/AuthContext';
 import { reportsService } from '@/services/reports.service';
 import {
@@ -580,48 +582,48 @@ export const CrearReporte = () => {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Reportería y decisiones · Informe ejecutivo"
-        code="RF-09 / CU-08"
-        title="Nuevo"
-        accent="reporte"
-        description="Compila la cartografía, la comparación temporal y el catastro de hallazgos en un documento A4 listo para jefatura y gerencia."
-        image="/mock/aerial-muelle-1-b.svg"
-        actions={
-          <>
-            <span className="flex items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white/60">
-              <Save className="h-3.5 w-3.5 text-emerald-400" />
-              {savedTime ? `Autoguardado ${savedTime}` : 'Borrador sin guardar'}
-            </span>
-            <button
-              type="button"
-              onClick={goToComparator}
-              className="group flex items-center gap-2 bg-white px-4 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-[#002855] shadow-xl transition-all hover:bg-blue-50 active:scale-[0.98]"
-            >
-              <Columns2 className="h-4 w-4" />
-              Ir al comparador
-              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </button>
-          </>
-        }
-      >
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 pt-4 text-[9px] font-bold uppercase tracking-[0.16em] text-white/45">
-          <span className="flex items-center gap-1.5">
-            <ListChecks className="h-3 w-3 text-blue-400" />
-            {selectedIncidents.length} hallazgos seleccionados
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Layers3 className="h-3 w-3 text-blue-400" />
-            {sector?.nombre} · {sector?.superficie}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Images className="h-3 w-3 text-blue-400" />
-            {includeComparison ? 'Comparación A/B incluida' : 'Sin comparación'}
-          </span>
-        </div>
-      </PageHeader>
+      <div className="min-h-full bg-white/95">
+        <ModuloHeader
+          icon={FileText}
+          eyebrow="Reportería y decisiones · Informe ejecutivo"
+          title={
+            <>
+              Nuevo <span className="text-[#7DD3FC]">reporte</span>
+            </>
+          }
+          subtitle="Compila la cartografía, la comparación temporal y el catastro de hallazgos en un documento A4 listo para jefatura y gerencia."
+          actions={
+            <>
+              <span className="flex items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white/60">
+                <Save className="h-3.5 w-3.5 text-emerald-400" />
+                {savedTime ? `Autoguardado ${savedTime}` : 'Borrador sin guardar'}
+              </span>
+              <ModuloButton variant="inverse" onClick={goToComparator}>
+                <Columns2 className="h-4 w-4" />
+                Ir al comparador
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </ModuloButton>
+            </>
+          }
+          meta={
+            <>
+              <span className="flex items-center gap-1.5">
+                <ListChecks className="h-3 w-3 text-[#7DD3FC]" />
+                {selectedIncidents.length} hallazgos seleccionados
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Layers3 className="h-3 w-3 text-[#7DD3FC]" />
+                {sector?.nombre} · {sector?.superficie}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Images className="h-3 w-3 text-[#7DD3FC]" />
+                {includeComparison ? 'Comparación A/B incluida' : 'Sin comparación'}
+              </span>
+            </>
+          }
+        />
 
-      <div className="mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">
+        <div className="p-4 md:p-6">
         <AnimatePresence>
           {showImportedBanner && comparison && (
             <motion.div
@@ -954,14 +956,10 @@ export const CrearReporte = () => {
                 </div>
 
                 <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    className="flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
-                  >
+                  <ModuloButton variant="secondary" onClick={handleSaveDraft}>
                     <Save className="h-3.5 w-3.5" />
                     Guardar borrador
-                  </button>
+                  </ModuloButton>
 
                   <div className="flex items-center gap-2">
                     <button
@@ -972,14 +970,10 @@ export const CrearReporte = () => {
                       <Trash2 className="h-3.5 w-3.5" />
                       Descartar
                     </button>
-                    <button
-                      type="button"
-                      onClick={goNext}
-                      className="group flex items-center justify-center gap-2 bg-[#003385] px-5 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#002a66]"
-                    >
+                    <ModuloButton onClick={goNext}>
                       Continuar a hallazgos
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                    </button>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </ModuloButton>
                   </div>
                 </footer>
               </motion.section>
@@ -1153,23 +1147,15 @@ export const CrearReporte = () => {
                 </div>
 
                 <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
-                  >
+                  <ModuloButton variant="secondary" onClick={goBack}>
                     <ArrowLeft className="h-3.5 w-3.5" />
                     Volver a datos
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    className="group flex items-center justify-center gap-2 bg-[#003385] px-5 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#002a66]"
-                  >
+                  </ModuloButton>
+                  <ModuloButton onClick={goNext}>
                     <Eye className="h-3.5 w-3.5" />
                     Ver vista previa
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                  </button>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </ModuloButton>
                 </footer>
               </motion.section>
             )}
@@ -1216,47 +1202,38 @@ export const CrearReporte = () => {
 
                 <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
-                    >
+                    <ModuloButton variant="secondary" onClick={goBack}>
                       <ArrowLeft className="h-3.5 w-3.5" />
                       Volver a hallazgos
-                    </button>
-                    <button
-                      type="button"
+                    </ModuloButton>
+                    <ModuloButton
+                      variant="secondary"
                       onClick={goToComparator}
-                      className="hidden items-center justify-center gap-2 px-3 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 transition-colors hover:text-blue-700 sm:flex"
+                      className="hidden sm:inline-flex"
                     >
                       <Columns2 className="h-3.5 w-3.5" />
                       Comparador
-                    </button>
+                    </ModuloButton>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
+                    <ModuloButton
+                      variant="secondary"
                       onClick={() =>
                         ui.info(
                           'Vista previa',
                           'El PDF se genera en el navegador con la impresión del documento A4. En producción lo compilará el backend ASP.NET Core.',
                         )
                       }
-                      className="flex items-center justify-center gap-2 border border-slate-200 bg-white px-3 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
                     >
                       <Info className="h-3.5 w-3.5" />
                       Ayuda
-                    </button>
-                    <button
-                      type="button"
-                      onClick={startGeneration}
-                      className="group flex items-center justify-center gap-2 bg-[#003385] px-5 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-900/20 transition-colors hover:bg-[#002a66]"
-                    >
+                    </ModuloButton>
+                    <ModuloButton onClick={startGeneration}>
                       <Download className="h-3.5 w-3.5" />
                       Generar reporte PDF
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                    </button>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </ModuloButton>
                   </div>
                 </footer>
               </motion.section>
@@ -1378,33 +1355,25 @@ export const CrearReporte = () => {
 
               <div className="space-y-2 border-t border-slate-100 p-4">
                 {step < 3 ? (
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    className="group flex w-full items-center justify-center gap-2 bg-[#003385] px-4 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#002a66]"
-                  >
+                  <ModuloButton onClick={goNext} className="w-full">
                     {step === 1 ? 'Continuar' : 'Vista previa'}
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                  </button>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </ModuloButton>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={startGeneration}
-                    className="group flex w-full items-center justify-center gap-2 bg-[#003385] px-4 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#002a66]"
-                  >
+                  <ModuloButton onClick={startGeneration} className="w-full">
                     <Download className="h-3.5 w-3.5" />
                     Generar PDF
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                  </button>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </ModuloButton>
                 )}
-                <button
-                  type="button"
+                <ModuloButton
+                  variant="secondary"
                   onClick={handleSaveDraft}
-                  className="flex w-full items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-[8px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
+                  className="w-full"
                 >
                   <Save className="h-3 w-3" />
                   Guardar borrador
-                </button>
+                </ModuloButton>
               </div>
             </div>
 
@@ -1463,6 +1432,7 @@ export const CrearReporte = () => {
             </div>
           </aside>
         </div>
+      </div>
       </div>
 
       <GenerationModal
@@ -1733,7 +1703,7 @@ const Modal = ({
     };
   }, [open, onClose]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8">
@@ -1798,7 +1768,8 @@ const Modal = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 
@@ -2128,22 +2099,18 @@ const GenerationModal = ({
           </div>
 
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={onDownload}
-              className="flex items-center justify-center gap-2 bg-[#003385] px-4 py-3.5 text-[9px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#002a66]"
-            >
+            <ModuloButton onClick={onDownload} className="w-full">
               <Download className="h-4 w-4" />
               Descargar PDF
-            </button>
-            <button
-              type="button"
+            </ModuloButton>
+            <ModuloButton
+              variant="secondary"
               onClick={onNewReport}
-              className="flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-3.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
+              className="w-full"
             >
               <RotateCcw className="h-4 w-4" />
               Nuevo reporte
-            </button>
+            </ModuloButton>
           </div>
 
           <p className="mt-4 text-center text-[8px] font-medium leading-relaxed text-slate-400">

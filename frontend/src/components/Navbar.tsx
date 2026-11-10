@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Columns2,
   FileText,
+  Home,
+  ImagePlus,
   LogOut,
   Menu,
   Settings,
@@ -12,7 +14,6 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { ui } from '@/utils/SwalService';
 import { cn, roleLabel } from '@/utils/format';
 interface MarcaProps {
   tone?: 'light' | 'dark';
@@ -68,13 +69,23 @@ const Marca = ({
       <div className="min-w-0 leading-none">
         <div
           className={cn(
-            'flex items-baseline gap-1.5 font-black uppercase tracking-tighter',
+            'flex items-baseline gap-1.5 font-black uppercase tracking-tighter transition-colors',
             s.title,
-            isLight ? 'text-white' : 'text-[#003B5C]',
+            isLight
+              ? 'text-[#7DD3FC] group-hover:text-white'
+              : 'text-[#003B5C]',
           )}
         >
           EPA
-          <span className={isLight ? 'text-[#7DD3FC]' : 'text-[#0284C7]'}>WebGIS</span>
+          <span
+            className={
+              isLight
+                ? 'text-[#34D399] transition-colors group-hover:text-white'
+                : 'text-[#0284C7]'
+            }
+          >
+            WebGIS
+          </span>
         </div>
         {showSubtitle && (
           <p
@@ -94,6 +105,18 @@ const Marca = ({
 
 
 const NAV_ITEMS = [
+  {
+    id: 'inicio',
+    label: 'Inicio',
+    path: '/inicio',
+    icon: Home,
+  },
+  {
+    id: 'ingesta',
+    label: 'Ingesta',
+    path: '/ingesta',
+    icon: ImagePlus,
+  },
   {
     id: 'comparador',
     label: 'Comparador',
@@ -117,11 +140,8 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     setMenuOpen(false);
-    const confirmed = await ui.confirmar(
-      'Cerrar sesión',
-      'Se eliminará la sesión local del prototipo. Los borradores guardados se conservarán.',
-    );
-    if (!confirmed) return;
+    window.dispatchEvent(new Event('epa:logout-start'));
+    await new Promise((resolve) => window.setTimeout(resolve, 480));
     await logout();
     navigate('/login', { replace: true });
   };
@@ -140,13 +160,14 @@ export const Navbar = () => {
             <button
               type="button"
               onClick={() => navigate('/inicio')}
-              className="shrink-0"
-              aria-label="Ir al inicio"
+              className="group shrink-0 [&>div>div:last-child]:hidden sm:[&>div>div:last-child]:block"
+              aria-label="Ir al panel de control"
+              title="Ir al panel de control"
             >
-              <Marca tone="light" size="sm" />
+              <Marca tone="light" size="sm" showSubtitle={false} />
             </button>
 
-            <nav className="ml-1 hidden h-12 items-center gap-1 rounded-2xl border border-white/5 bg-white/[0.04] p-1 lg:flex">
+            <nav className="ml-1 flex h-12 items-center gap-1 rounded-2xl border border-white/5 bg-white/[0.04] p-1">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname.startsWith(item.path);
@@ -154,8 +175,10 @@ export const Navbar = () => {
                   <NavLink
                     key={item.id}
                     to={item.path}
+                    aria-label={item.label}
+                    title={item.label}
                     className={cn(
-                      'relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors',
+                      'relative flex items-center gap-2 whitespace-nowrap rounded-xl px-2.5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors sm:px-3',
                       active
                         ? 'text-white'
                         : 'text-white/55 hover:bg-white/[0.04] hover:text-white',
@@ -172,7 +195,7 @@ export const Navbar = () => {
                       <Icon
                         className={cn('h-3.5 w-3.5', active ? 'text-[#7DD3FC]' : '')}
                       />
-                      {item.label}
+                      <span className="hidden sm:inline">{item.label}</span>
                     </span>
                   </NavLink>
                 );
@@ -209,30 +232,31 @@ export const Navbar = () => {
               <AnimatePresence>
                 {menuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    className="absolute right-0 top-[calc(100%+10px)] w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    className="absolute right-0 top-full w-64 origin-top-right rounded-b-2xl rounded-tl-2xl border border-[#7DD3FC]/20 bg-[#003B5C] p-2 text-white shadow-2xl"
                     role="menu"
                   >
-                    <div className="border-b border-slate-100 px-3 py-3">
-                      <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <span className="absolute -top-1 right-3 h-2 w-2 rotate-45 border-l border-t border-[#7DD3FC]/20 bg-[#003B5C]" />
+                    <div className="border-b border-white/10 px-3 py-3">
+                      <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#7DD3FC]">
                         <UserRound className="h-3 w-3" /> Sesión activa
                       </p>
-                      <p className="mt-2 text-xs font-black uppercase tracking-tight text-[#002855]">
+                      <p className="mt-2 text-xs font-black uppercase tracking-tight text-white">
                         {user?.nombre}
                       </p>
-                      <p className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
+                      <p className="mt-0.5 truncate text-[10px] font-medium text-white/60">
                         {user?.email}
                       </p>
-                      <p className="mt-2 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <p className="mt-2 text-[9px] font-bold uppercase tracking-wider text-white/40">
                         {user?.unidad}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 transition-colors hover:bg-red-50"
+                      className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-widest text-red-300 transition-colors hover:bg-red-500/10"
                       role="menuitem"
                     >
                       <LogOut className="h-3.5 w-3.5" />

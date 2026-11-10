@@ -14,9 +14,10 @@ La solución completa está compuesta por:
 - `WebGIS.Server/`: API ASP.NET Core.
 - `WebGIS.AppHost/`: orquestación Aspire que levanta ambos.
 
-> Los tres artefactos funcionan con datos simulados. La API real todavía no está
-> implementada; la capa de servicios ya contiene los contratos previstos para ASP.NET Core
-> y PostgreSQL/PostGIS.
+> El login y los reportes siguen usando datos simulados. El comparador ya envía las
+> imágenes al backend ASP.NET Core, donde OpenCvSharp aplica la detección de cambios y
+> devuelve la imagen A marcada. Los demás contratos previstos para ASP.NET Core y
+> PostgreSQL/PostGIS están definidos en la capa de servicios.
 
 Guion corto para presentar los tres artefactos: [`docs/GUION-DEMOSTRACION.md`](docs/GUION-DEMOSTRACION.md).
 
@@ -31,8 +32,9 @@ Guion corto para presentar los tres artefactos: [`docs/GUION-DEMOSTRACION.md`](d
 | Ruta | Artefacto | Requisito de referencia |
 |---|---|---|
 | `/login` | Portal + carrusel + acceso y recuperación simulada | RF-10 / CU-01 |
-| `/inicio` | Home con accesos a Comparador, Informes e Ingresar Imágenes, más contadores | RF-10 / CU-01 |
-| `/comparador` | Selección de capturas y cortina deslizadora A/B | RF-06 / CU-05 |
+| `/inicio` | Home con guía de uso y métricas del sistema | RF-10 / CU-01 |
+| `/ingesta` | Carga local de imágenes por lotes con miniaturas y acciones | RF-01 / CU-02 |
+| `/comparador` | Carga local de imágenes A/B y cortina deslizadora | RF-06 / CU-05 |
 | `/reportes/nuevo` | Asistente de reporte ejecutivo en 3 pasos | RF-09 / CU-08 |
 
 Rutas auxiliares:
@@ -109,10 +111,13 @@ aplicarán cuando exista el backend. La recuperación de contraseña usa el cód
 | Estilos | Tailwind CSS 4 |
 | Rutas | React Router 7 |
 | Animación | Framer Motion 12 |
+| Listas animadas | AutoAnimate |
+| Contadores animados | NumberFlow |
 | Iconos | Lucide React |
 | Carrusel | Embla Carousel + Autoplay |
 | Alertas | SweetAlert2 + sweetalert2-react-content |
 | Utilidades | clsx + tailwind-merge |
+| Procesamiento de imágenes | ASP.NET Core + OpenCvSharp4 (backend) |
 
 La selección de librerías sigue la línea del proyecto SISAC (referencia visual), sin reutilizar
 su contenido, logos, textos ni identidad institucional.
@@ -141,24 +146,27 @@ Dentro de `frontend/`:
 │  │  ├─ Comparador/
 │  │  │  ├─ Cortina.tsx                 # cortina interactiva
 │  │  │  ├─ SelectorLugar.tsx           # lista de lugares
-│  │  │  ├─ SelectorCaptura.tsx         # fecha + foto A/B
+│  │  │  ├─ SelectorCaptura.tsx         # carga local de imagen A/B
 │  │  │  ├─ ImpresionComparacion.tsx    # documento de comparación
 │  │  │  └─ index.ts
-│  │  ├─ Layout.tsx                     # layout general autenticado
+│  │  ├─ Layout.tsx                     # layout general + transición entre módulos
+│  │  ├─ ModuloButton.tsx               # botones normalizados
+│  │  ├─ ModuloHeader.tsx               # título/subtítulo normalizados
+│  │  ├─ ModuloShell.tsx                # fondo + tarjeta central de módulos
 │  │  ├─ Navbar.tsx                     # cabecera/navegación
-│  │  ├─ PageHeader.tsx                 # cabecera con carrusel opcional
 │  │  └─ RutaProtegida.tsx
 │  ├─ context/AuthContext.tsx
 │  ├─ mocks/data.ts                     # sectores, capturas, vuelos e incidencias
 │  ├─ paginas/
 │  │  ├─ Login.tsx
 │  │  ├─ Inicio.tsx                     # home con accesos y contadores
+│  │  ├─ Ingesta.tsx                    # carga por lotes y miniaturas
 │  │  ├─ Comparador.tsx
 │  │  └─ CrearReporte.tsx               # página + componentes del reporte
 │  ├─ services/
 │  │  ├─ http.ts                # fetch tipado + token (listo para ASP.NET)
 │  │  ├─ auth.service.ts
-│  │  ├─ flights.service.ts
+│  │  ├─ comparison.service.ts  # envío A/B al backend OpenCV
 │  │  └─ reports.service.ts
 │  ├─ types/index.ts
 │  ├─ utils/
@@ -197,17 +205,23 @@ VITE_USE_MOCK=false
 | Capturas | `GET /api/v1/fotografias?sectorId=` | `Capture[]` |
 | Incidencias | `GET /api/v1/incidencias?sectorId=` | `Incident[]` |
 | Reportes | `POST /api/v1/reportes` | `GeneratedReport` |
+| Comparador | `POST /api/comparador/procesar` | `image/png` + `X-Cambios-Detectados` |
 
 3. El token se envía como `Authorization: Bearer <token>` desde `src/services/http.ts`
    (`localStorage` → `epa_token`). Reemplazar por cookies `HttpOnly` cuando el backend lo
    defina.
+
+   El endpoint del comparador recibe `multipart/form-data` con los campos `imagenA` e
+   `imagenB`. Todo el algoritmo (escala de grises, umbrales, morfología, contornos y
+   agrupación de círculos) está en `WebGIS.Server/ComparadorService.cs`; la respuesta es
+   un PNG de la imagen A con los cambios marcados en rojo.
 
 4. Para el PDF real, reemplazar la simulación de `reportsService.createReport` por la
    descarga desde `GET /api/v1/reportes/{id}/pdf` (QuestPDF en el backend). En esta demo se
    usa `window.print()` sobre el componente A4.
 
 5. El fallback de SPA ya está configurado en `WebGIS.Server/Program.cs` para que
-   `/comparador` y `/reportes/nuevo` funcionen al recargar. En publicación, el AppHost copia
+   `/ingesta`, `/comparador` y `/reportes/nuevo` funcionen al recargar. En publicación, el AppHost copia
    el build del frontend a `wwwroot` mediante `PublishWithContainerFiles`.
 
 ### Correspondencia con el modelo de datos del proyecto
@@ -230,15 +244,24 @@ Los tipos de `src/types/index.ts` reflejan las tablas definidas en el documento 
   una segunda sección con carrusel horizontal de reportes recientes. El acceso es un panel
   lateral de pantalla completa que se abre y cierra desde el botón del cabezal; el
   formulario contiene solo correo, contraseña, **Ingresar** y recuperación de contraseña.
-- **Home:** fondo animado celeste/verde/amarillo, tres accesos grandes centrados con
-  icono, nombre y flecha (Comparador, Informes e Ingresar Imágenes), y tres contadores en píldoras
-  blancas. La navbar concentra Comparador e Informes; el engranaje junto al nombre del
-  usuario abre el menú de cuenta y reemplaza el antiguo botón **Cuenta**.
-- **Comparador:** selección de lugar y rango de fechas, asignación de captura anterior
-  (A) y posterior (B), cortina con `clip-path`, porcentaje visible, soporte de teclado
-  (`←`/`→`, `Home`/`End`), retícula y reinicio. Las acciones finales son **Ingresar en
-  reporte**, **Exportar incidencia a PDF** e **Ir a reportes**. No se muestran metadatos
-  técnicos ni hallazgos en la interfaz.
+- **Módulos:** Home, Ingesta, Comparador e Informes comparten un degradado animado lento
+  con la paleta EPA/ZEAP (azul, verde, celeste y amarillo), una tarjeta central de tamaño
+  uniforme y superficie blanca por módulo. La tarjeta contenedora es transparente para que
+  el hueco entre páginas muestre el degradado durante la transición. La navegación desliza
+  el contenido horizontalmente, como un carrusel, con Framer Motion; el módulo saliente se
+  desmonta al terminar la animación. El Home muestra una guía breve de tres pasos para
+  ingresar imágenes, comparar capturas y generar un informe, junto con tres contadores
+  animados con NumberFlow. La navbar concentra Inicio, Ingesta, Comparador e Informes; el
+  engranaje junto al nombre del usuario abre el menú de cuenta.
+- **Normalización:** todos los módulos comparten `ModuloHeader` (título y subtítulo con
+  igual jerarquía), `ModuloButton` (misma altura, radio, tipografía y estados) y una
+  transición horizontal de 0.6 s. La navbar incluye Inicio, Ingesta, Comparador e Informes.
+  El cierre de sesión desliza la tarjeta fuera antes de montar la portada pública.
+- **Comparador:** selección de lugar y carga de dos imágenes desde el computador (A y B),
+  cortina con `clip-path`, porcentaje visible, soporte de teclado (`←`/`→`, `Home`/`End`),
+  retícula y reinicio. Las acciones finales son **Ingresar en reporte**, **Exportar
+  incidencia a PDF** e **Ir a reportes**. No se muestran metadatos técnicos ni hallazgos en
+  la interfaz.
 - **Reporte:** asistente de tres pasos con borrador automático, filtros del catastro,
   selección de hallazgos, resumen lateral, vista A4 y simulación de compilación con etapas.
 - **Integración entre artefactos:** el par A/B del comparador se guarda en

@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { GripVertical, Grid3X3, RotateCcw } from 'lucide-react';
 import type { Capture } from '@/types';
-import { cn, formatDateShort } from '@/utils/format';
+import { cn } from '@/utils/format';
 
 export interface MarcadorCortina {
   id: string;
@@ -104,7 +104,7 @@ export const Cortina = ({
         {/* Capa B (después) */}
         <img
           src={captureB.src}
-          alt={`Captura B, ${formatDateShort(captureB.fecha)}`}
+          alt={`Captura B, ${captureB.archivo}`}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           draggable={false}
         />
@@ -137,7 +137,7 @@ export const Cortina = ({
         >
           <img
             src={captureA.src}
-            alt={`Captura A, ${formatDateShort(captureA.fecha)}`}
+            alt={`Captura A, ${captureA.archivo}`}
             className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             draggable={false}
           />
@@ -161,17 +161,17 @@ export const Cortina = ({
             <span className="grid h-6 w-6 place-items-center bg-blue-600 text-[10px] font-black text-white shadow-lg">
               A
             </span>
-            <div className="border border-white/15 bg-[#001a35]/75 px-2 py-1 backdrop-blur-sm">
-              <p className="text-[9px] font-black uppercase tracking-widest text-white">
-                {formatDateShort(captureA.fecha)}
+            <div className="max-w-[10rem] border border-white/15 bg-[#001a35]/75 px-2 py-1 backdrop-blur-sm">
+              <p className="truncate text-[9px] font-black uppercase tracking-widest text-white">
+                {captureA.archivo}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="border border-white/15 bg-[#001a35]/75 px-2 py-1 text-right backdrop-blur-sm">
-              <p className="text-[9px] font-black uppercase tracking-widest text-white">
-                {formatDateShort(captureB.fecha)}
+            <div className="max-w-[10rem] border border-white/15 bg-[#001a35]/75 px-2 py-1 text-right backdrop-blur-sm">
+              <p className="truncate text-[9px] font-black uppercase tracking-widest text-white">
+                {captureB.archivo}
               </p>
             </div>
             <span className="grid h-6 w-6 place-items-center bg-[#ffd700] text-[10px] font-black text-[#001a35] shadow-lg">

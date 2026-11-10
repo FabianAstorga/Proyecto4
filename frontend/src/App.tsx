@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { RutaProtegida } from '@/components/RutaProtegida';
 import { Login } from '@/paginas/Login';
 import { Inicio } from '@/paginas/Inicio';
+import { Ingesta } from '@/paginas/Ingesta';
 import { Comparador } from '@/paginas/Comparador';
 import { CrearReporte } from '@/paginas/CrearReporte';
 
@@ -25,6 +26,7 @@ const App = () => (
       <Route element={<RutaProtegida />}>
         <Route element={<Layout />}>
           <Route path="/inicio" element={<Inicio />} />
+          <Route path="/ingesta" element={<Ingesta />} />
           <Route path="/comparador" element={<Comparador />} />
           <Route path="/reportes/nuevo" element={<CrearReporte />} />
         </Route>

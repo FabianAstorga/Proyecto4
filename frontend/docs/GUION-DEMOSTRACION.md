@@ -34,8 +34,9 @@ Abrir la URL de Vite (por defecto `http://localhost:5173/login`).
 4. El formulario es deliberadamente mínimo: correo, contraseña, **Ingresar** y
    **¿Olvidaste tu contraseña?**. Ingresar cualquier correo válido y una contraseña de 4+
    caracteres.
-5. Al ingresar se abre el **Home**, con los accesos **Comparador**, **Informes** e
-   **Ingresar Imágenes**, además de los contadores de actividad.
+5. Al ingresar se abre el **Home**, con una guía breve de tres pasos, las métricas del
+   sistema y la navegación superior hacia **Inicio**, **Ingesta**, **Comparador** e
+   **Informes**.
 6. Mostrar el flujo de recuperación → código de demostración `482913` → nueva contraseña.
 7. Cerrar el panel para volver al carrusel.
 
@@ -53,17 +54,17 @@ Abrir la URL de Vite (por defecto `http://localhost:5173/login`).
 
 ---
 
-## 2. Comparador temporal (`/comparador`)
+## 2. Comparador visual (`/comparador`)
 
 **Qué mostrar**
 
 1. La portada del comparador tiene el carrusel de capturas como fondo, el título y una
    explicación breve.
-2. En **01 · Escoge lugar y fecha**, abrir la lista de **Lugar** y seleccionar, por ejemplo,
-   **Patio Norte**. Elegir un rango, por ejemplo **01-06-2026** a **30-09-2026**.
-3. En los espacios **A (fecha anterior)** y **B (fecha posterior)**, seleccionar
-   **14 JUN 2026** y **14 SEP 2026**. El visor aparece cuando existen dos fechas
-   comparables y A es anterior a B.
+2. En **01 · Escoge lugar y carga las imágenes**, abrir la lista de **Lugar** y seleccionar,
+   por ejemplo, **Patio Norte**.
+3. En **Imagen A** e **Imagen B**, presionar **Seleccionar imagen** y cargar dos archivos
+   desde el computador. El backend procesa ambas imágenes y devuelve la imagen A con los
+   cambios marcados en rojo; esa detección se usa como lado B de la cortina.
 4. En el visor, arrastrar la cortina con el ratón o el dedo. También funciona con
    teclado (`←`/`→`, `Shift` para pasos grandes, `Home`/`End`).
 5. Activar **Retícula** para revisar alineación y **Reiniciar** para volver al 50 %.
@@ -73,8 +74,9 @@ Abrir la URL de Vite (por defecto `http://localhost:5173/login`).
 **Mensaje para la presentación**
 
 > La cortina se resuelve en el navegador con dos imágenes superpuestas y `clip-path`.
-> El flujo obliga a escoger lugar, rango de fechas y una captura anterior/posterior; la
-> interfaz no muestra metadatos técnicos ni información que pertenece al backend.
+> Las imágenes A/B viajan al backend ASP.NET Core, donde OpenCvSharp detecta los cambios y
+> genera la imagen marcada que se usa como lado B. La interfaz no muestra metadatos
+> técnicos ni información que pertenece al backend.
 
 **Trazabilidad:** RAN-04, RF-06, CU-05.
 

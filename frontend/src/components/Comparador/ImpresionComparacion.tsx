@@ -1,5 +1,5 @@
 import type { Capture } from '@/types';
-import { cn, formatDateShort } from '@/utils/format';
+import { cn } from '@/utils/format';
 
 export const ImpresionComparacion = ({
   sectorName,
@@ -20,23 +20,23 @@ export const ImpresionComparacion = ({
           EPA WebGIS
         </p>
         <h1 className="mt-1 text-2xl font-black uppercase tracking-tighter text-[#002855]">
-          Comparación temporal
+          Comparación de imágenes
         </h1>
       </div>
       <div className="text-right">
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
           {sectorName}
         </p>
-        <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-slate-400">
-          {formatDateShort(captureA.fecha)} — {formatDateShort(captureB.fecha)}
+        <p className="mt-1 max-w-[220px] truncate font-mono text-[9px] uppercase tracking-widest text-slate-400">
+          {captureA.archivo} — {captureB.archivo}
         </p>
       </div>
     </header>
 
     <div className="mt-6 grid grid-cols-2 gap-4">
       {[
-        { capture: captureA, label: 'A', hint: 'Fecha anterior' },
-        { capture: captureB, label: 'B', hint: 'Fecha posterior' },
+        { capture: captureA, label: 'A', hint: 'Imagen A' },
+        { capture: captureB, label: 'B', hint: 'Imagen B' },
       ].map(({ capture, label, hint }) => (
         <figure key={label} className="border border-slate-200">
           <div className="relative aspect-[16/9]">
@@ -60,8 +60,8 @@ export const ImpresionComparacion = ({
             <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">
               {hint}
             </span>
-            <span className="font-mono text-[8px] font-bold text-slate-500">
-              {formatDateShort(capture.fecha)}
+            <span className="max-w-[150px] truncate font-mono text-[8px] font-bold text-slate-500">
+              {capture.archivo}
             </span>
           </figcaption>
         </figure>
