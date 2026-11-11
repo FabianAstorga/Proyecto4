@@ -1,5 +1,9 @@
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using OpenCvSharp;
+using WebGIS.Server.Data;
+using WebGIS.Server.Dtos;
+using WebGIS.Server.Services;
 
 namespace WebGIS.Server;
 
@@ -283,6 +287,107 @@ public static class ComparadorEndpoints
                 })
             .DisableAntiforgery()
             .WithName("ProcesarComparacion")
+            .WithTags("Comparador");
+
+        app.MapPost(
+                "/api/comparador/procesar-fotos",
+                async (
+                    CompararFotosRequest request,
+                    WebGisDbContext db,
+                    ComparadorService servicio,
+                    IngestaService ingestaService,
+                    HttpContext context,
+                    CancellationToken cancellationToken) =>
+                {
+                    if (request.IdFotoA == request.IdFotoB)
+                    {
+                        return Results.BadRequest(new
+                        {
+                            detail = "Debes seleccionar dos fotografías distintas.",
+                        });
+                    }
+
+                    var fotos = await db.Fotografias
+                        .AsNoTracking()
+                        .Where(foto =>
+                            foto.IdFoto == request.IdFotoA ||
+                            foto.IdFoto == request.IdFotoB)
+                        .ToListAsync(cancellationToken);
+
+                    var fotoA = fotos.FirstOrDefault(foto => foto.IdFoto == request.IdFotoA);
+                    var fotoB = fotos.FirstOrDefault(foto => foto.IdFoto == request.IdFotoB);
+
+                    if (fotoA is null || fotoB is null)
+                    {
+                        return Results.NotFound(new
+                        {
+                            detail = "Una de las fotografías seleccionadas no existe.",
+                        });
+                    }
+
+                    if (string.IsNullOrWhiteSpace(fotoA.RutaRelativa) ||
+                        string.IsNullOrWhiteSpace(fotoB.RutaRelativa))
+                    {
+                        return Results.BadRequest(new
+                        {
+                            detail = "Una de las fotografías no tiene archivo asociado.",
+                        });
+                    }
+
+                    try
+                    {
+                        var rutaA = ingestaService.ObtenerRutaAbsolutaMedia(fotoA.RutaRelativa);
+                        var rutaB = ingestaService.ObtenerRutaAbsolutaMedia(fotoB.RutaRelativa);
+
+                        if (!File.Exists(rutaA) || !File.Exists(rutaB))
+                        {
+                            return Results.NotFound(new
+                            {
+                                detail = "No se encontró el archivo físico de una de las fotografías.",
+                            });
+                        }
+
+                        await using var streamA = File.OpenRead(rutaA);
+                        await using var streamB = File.OpenRead(rutaB);
+
+                        var result = await servicio.ProcesarAsync(
+                            streamA,
+                            streamB,
+                            cancellationToken);
+
+                        context.Response.Headers["X-Cambios-Detectados"] =
+                            result.CambiosDetectados.ToString(CultureInfo.InvariantCulture);
+
+                        return Results.File(
+                            result.ImagenPng,
+                            "image/png",
+                            "deteccion-cambios.png");
+                    }
+                    catch (IngestaValidacionException exception)
+                    {
+                        return Results.BadRequest(new { detail = exception.Message });
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        return Results.NotFound(new
+                        {
+                            detail = "No se encontró el archivo físico de una de las fotografías.",
+                        });
+                    }
+                    catch (ArgumentException exception)
+                    {
+                        return Results.BadRequest(new { detail = exception.Message });
+                    }
+                    catch (Exception exception)
+                    {
+                        return Results.Problem(
+                            title: "No fue posible procesar las fotografías.",
+                            detail: exception.Message,
+                            statusCode: StatusCodes.Status500InternalServerError);
+                    }
+                })
+            .RequireAuthorization()
+            .WithName("ProcesarComparacionFotos")
             .WithTags("Comparador");
 
         return app;

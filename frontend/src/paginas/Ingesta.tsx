@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
-import { Check, ImagePlus, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Check, ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { ModuloButton } from '@/components/ModuloButton';
 import { ModuloHeader } from '@/components/ModuloHeader';
+import { ingestaService, type SectorOption } from '@/services/ingesta.service';
 import { cn } from '@/utils/format';
 
 interface ImagenCargada {
@@ -17,12 +19,48 @@ const newId = () =>
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export const Ingesta = () => {
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<ImagenCargada[]>([]);
   const [gridRef] = useAutoAnimate<HTMLDivElement>();
   const [items, setItems] = useState<ImagenCargada[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [sectores, setSectores] = useState<SectorOption[]>([]);
+  const [idSector, setIdSector] = useState('');
+  const [cargandoSectores, setCargandoSectores] = useState(true);
+  const [ingresando, setIngresando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    ingestaService
+      .listarSectores()
+      .then((lista) => {
+        if (!active) return;
+        setSectores(lista);
+        const preferido =
+          lista.find((sector) => sector.codigo === 'ZEAP-C') ?? lista[0];
+        setIdSector((actual) =>
+          actual || String(preferido?.idSector ?? ''),
+        );
+      })
+      .catch((exception: unknown) => {
+        if (!active) return;
+        setError(
+          exception instanceof Error
+            ? exception.message
+            : 'No fue posible cargar los sectores.',
+        );
+      })
+      .finally(() => {
+        if (active) setCargandoSectores(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -44,7 +82,6 @@ export const Ingesta = () => {
 
     if (next.length === 0) return;
     setItems((prev) => [...prev, ...next]);
-    setSubmitted(false);
   };
 
   const duplicateItem = (id: string) => {
@@ -61,7 +98,6 @@ export const Ingesta = () => {
 
       return [...prev.slice(0, index + 1), copy, ...prev.slice(index + 1)];
     });
-    setSubmitted(false);
   };
 
   const removeItem = (id: string) => {
@@ -70,7 +106,29 @@ export const Ingesta = () => {
       if (target) URL.revokeObjectURL(target.url);
       return prev.filter((item) => item.id !== id);
     });
-    setSubmitted(false);
+  };
+
+  const goToDetail = async () => {
+    if (items.length === 0 || !idSector || ingresando) return;
+
+    setIngresando(true);
+    setError(null);
+
+    try {
+      const vuelo = await ingestaService.crearVuelo(
+        Number(idSector),
+        items.map((item) => item.file),
+      );
+      navigate(`/ingesta/detalle/${vuelo.idVuelo}`);
+    } catch (exception) {
+      setError(
+        exception instanceof Error
+          ? exception.message
+          : 'No fue posible ingresar el lote.',
+      );
+    } finally {
+      setIngresando(false);
+    }
   };
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -83,12 +141,37 @@ export const Ingesta = () => {
     <div className="min-h-full bg-white/95">
       <ModuloHeader
         icon={ImagePlus}
-        eyebrow="Módulo de ingesta"
         title="Ingesta de imágenes"
         subtitle="Selecciona o arrastra las imágenes del vuelo para preparar el lote que luego podrás comparar y usar en un informe."
       />
 
       <div className="p-4 md:p-6">
+        <div className="mb-4 flex flex-col gap-2 border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <label
+            htmlFor="sector-ingesta"
+            className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500"
+          >
+            Sector del lote
+          </label>
+          <select
+            id="sector-ingesta"
+            value={idSector}
+            onChange={(event) => setIdSector(event.target.value)}
+            disabled={cargandoSectores || ingresando}
+            className="min-w-[220px] border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-[#003B5C] outline-none transition-colors focus:border-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {cargandoSectores && <option value="">Cargando sectores…</option>}
+            {!cargandoSectores && sectores.length === 0 && (
+              <option value="">Sin sectores disponibles</option>
+            )}
+            {sectores.map((sector) => (
+              <option key={sector.idSector} value={sector.idSector}>
+                {sector.codigo}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div
           role="button"
           tabIndex={0}
@@ -201,24 +284,24 @@ export const Ingesta = () => {
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <ModuloButton
-            variant="secondary"
-            onClick={() => inputRef.current?.click()}
+            onClick={() => void goToDetail()}
+            disabled={items.length === 0 || !idSector || ingresando}
           >
-            <Plus className="h-4 w-4" />
-            Agregar
-          </ModuloButton>
-          <ModuloButton
-            onClick={() => setSubmitted(true)}
-            disabled={items.length === 0}
-          >
-            <Check className="h-4 w-4" />
-            Ingresar
+            {ingresando ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            {ingresando ? 'Ingresando…' : 'Ingresar'}
           </ModuloButton>
         </div>
 
-        {submitted && (
-          <p className="mt-4 text-center text-[10px] font-black uppercase tracking-[0.18em] text-[#0F766E]">
-            Lote listo: {items.length} {items.length === 1 ? 'imagen' : 'imágenes'}.
+        {error && (
+          <p
+            role="alert"
+            className="mt-3 text-center text-[10px] font-bold text-red-600"
+          >
+            {error}
           </p>
         )}
       </div>

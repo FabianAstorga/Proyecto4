@@ -73,6 +73,7 @@ export const formatNumber = (value: number): string =>
 export const roleLabel = (role?: string | null): string => {
   if (role === 'Directivo') return 'Jefatura';
   if (role === 'Operador') return 'Operador';
+  if (role === 'Admin') return 'Administrador';
   return 'Sin rol';
 };
 

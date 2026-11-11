@@ -69,8 +69,11 @@ export const authService = {
       return { demoCode: DEMO_CODE };
     }
 
-    await http.post('/api/auth/recover/request', { email });
-    return {};
+    const result = await http.post<{ demoCode?: string }>(
+      '/api/auth/recover/request',
+      { email },
+    );
+    return { demoCode: result.demoCode };
   },
 
   async confirmPasswordReset(input: {

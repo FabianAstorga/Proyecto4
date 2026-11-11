@@ -27,6 +27,39 @@ export async function processComparison(
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 
+  return readComparisonResponse(response);
+}
+
+/**
+ * Compara dos fotografías ya almacenadas en el servidor, sin volver a
+ * subir los archivos desde el navegador.
+ */
+export async function processComparisonByPhotos(
+  idFotoA: number,
+  idFotoB: number,
+  signal?: AbortSignal,
+): Promise<ComparisonResult> {
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/comparador/procesar-fotos`,
+    {
+      method: 'POST',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ idFotoA, idFotoB }),
+    },
+  );
+
+  return readComparisonResponse(response);
+}
+
+async function readComparisonResponse(
+  response: Response,
+): Promise<ComparisonResult> {
   if (!response.ok) {
     let message = 'No fue posible procesar las imágenes.';
     try {

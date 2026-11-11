@@ -106,12 +106,6 @@ const Marca = ({
 
 const NAV_ITEMS = [
   {
-    id: 'inicio',
-    label: 'Inicio',
-    path: '/inicio',
-    icon: Home,
-  },
-  {
     id: 'ingesta',
     label: 'Ingesta',
     path: '/ingesta',
@@ -128,6 +122,12 @@ const NAV_ITEMS = [
     label: 'Informes',
     path: '/reportes/nuevo',
     icon: FileText,
+  },
+  {
+    id: 'inicio',
+    label: 'Inicio',
+    path: '/inicio',
+    icon: Home,
   },
 ];
 

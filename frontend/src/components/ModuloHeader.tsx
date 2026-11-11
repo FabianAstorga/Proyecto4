@@ -4,7 +4,7 @@ import { cn } from '@/utils/format';
 
 interface ModuloHeaderProps {
   icon: LucideIcon;
-  eyebrow: string;
+  eyebrow?: string;
   title: ReactNode;
   subtitle: string;
   actions?: ReactNode;
@@ -37,9 +37,11 @@ export const ModuloHeader = ({
           <Icon className="h-5 w-5 text-[#7DD3FC]" />
         </div>
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-[#7DD3FC]">
-            {eyebrow}
-          </p>
+          {eyebrow && (
+            <p className="text-[9px] font-black uppercase tracking-[0.24em] text-[#7DD3FC]">
+              {eyebrow}
+            </p>
+          )}
           <h1 className="mt-1 text-2xl font-black uppercase tracking-tighter md:text-3xl">
             {title}
           </h1>
