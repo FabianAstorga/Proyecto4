@@ -25,3 +25,6 @@ Thumbs.db
 
 # Archivos subidos en desarrollo
 WebGIS.Server/media/
+
+# Build del frontend servido por ASP.NET Core en la demo
+WebGIS.Server/wwwroot/
