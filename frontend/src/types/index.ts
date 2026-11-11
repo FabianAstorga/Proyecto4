@@ -1,4 +1,3 @@
-/** Tipos compartidos por los tres artefactos de interfaz. */
 
 export type Role = 'Operador' | 'Directivo' | 'Admin';
 

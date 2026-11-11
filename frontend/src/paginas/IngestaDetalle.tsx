@@ -18,14 +18,14 @@ import {
   type VueloDetalle,
 } from '@/services/ingesta.service';
 
-const formatBytes = (bytes: number | null) => {
+const formatearBytes = (bytes: number | null) => {
   if (bytes === null) return 'No disponible';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-const formatDate = (value: string) =>
+const formatearFecha = (value: string) =>
   new Date(value).toLocaleString('es-CL', {
     day: '2-digit',
     month: 'short',
@@ -34,7 +34,7 @@ const formatDate = (value: string) =>
     minute: '2-digit',
   });
 
-const getDimensions = (foto: FotografiaDetalle) =>
+const obtenerDimensiones = (foto: FotografiaDetalle) =>
   foto.anchoPx && foto.altoPx
     ? `${foto.anchoPx} × ${foto.altoPx} px`
     : 'No disponible';
@@ -44,8 +44,8 @@ export const IngestaDetalle = () => {
   const navigate = useNavigate();
 
   const [vuelo, setVuelo] = useState<VueloDetalle | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [idSeleccionado, setIdSeleccionado] = useState<number | null>(null);
+  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,11 +54,11 @@ export const IngestaDetalle = () => {
 
     if (!Number.isFinite(id) || id <= 0) {
       setError('El identificador del lote no es válido.');
-      setLoading(false);
+      setCargando(false);
       return;
     }
 
-    setLoading(true);
+    setCargando(true);
     setError(null);
 
     ingestaService
@@ -66,7 +66,7 @@ export const IngestaDetalle = () => {
       .then((detalle) => {
         if (!active) return;
         setVuelo(detalle);
-        setSelectedId(detalle.fotografias[0]?.idFoto ?? null);
+        setIdSeleccionado(detalle.fotografias[0]?.idFoto ?? null);
       })
       .catch((exception: unknown) => {
         if (!active) return;
@@ -77,7 +77,7 @@ export const IngestaDetalle = () => {
         );
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) setCargando(false);
       });
 
     return () => {
@@ -86,7 +86,7 @@ export const IngestaDetalle = () => {
   }, [idVuelo]);
 
   const seleccionada =
-    vuelo?.fotografias.find((foto) => foto.idFoto === selectedId) ??
+    vuelo?.fotografias.find((foto) => foto.idFoto === idSeleccionado) ??
     vuelo?.fotografias[0];
 
   return (
@@ -98,7 +98,7 @@ export const IngestaDetalle = () => {
       />
 
       <div className="p-4 md:p-6">
-        {loading ? (
+        {cargando ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-slate-500">
             <Loader2 className="h-7 w-7 animate-spin text-[#0F766E]" />
             <p className="text-[10px] font-black uppercase tracking-[0.18em]">
@@ -156,7 +156,7 @@ export const IngestaDetalle = () => {
                     <li key={foto.idFoto}>
                       <button
                         type="button"
-                        onClick={() => setSelectedId(foto.idFoto)}
+                        onClick={() => setIdSeleccionado(foto.idFoto)}
                         className={
                           active
                             ? 'flex w-full items-center gap-3 bg-[#003B5C]/5 px-3 py-3 text-left'
@@ -179,7 +179,7 @@ export const IngestaDetalle = () => {
                             {foto.nombreArchivo}
                           </p>
                           <p className="mt-1 text-[9px] font-medium text-slate-500">
-                            {formatBytes(foto.tamanoBytes)} ·{' '}
+                            {formatearBytes(foto.tamanoBytes)} ·{' '}
                             {foto.mimeType ?? 'imagen'} · Orden {index + 1}
                           </p>
                         </div>
@@ -239,7 +239,7 @@ export const IngestaDetalle = () => {
                           Dimensiones
                         </dt>
                         <dd className="mt-0.5 text-[10px] font-semibold text-slate-600">
-                          {getDimensions(seleccionada)}
+                          {obtenerDimensiones(seleccionada)}
                         </dd>
                       </div>
                     </div>
@@ -251,7 +251,7 @@ export const IngestaDetalle = () => {
                           Tamaño
                         </dt>
                         <dd className="mt-0.5 text-[10px] font-semibold text-slate-600">
-                          {formatBytes(seleccionada.tamanoBytes)}
+                          {formatearBytes(seleccionada.tamanoBytes)}
                         </dd>
                       </div>
                     </div>
@@ -263,7 +263,7 @@ export const IngestaDetalle = () => {
                           Fecha de captura
                         </dt>
                         <dd className="mt-0.5 text-[10px] font-semibold text-slate-600">
-                          {formatDate(seleccionada.fechaCaptura)}
+                          {formatearFecha(seleccionada.fechaCaptura)}
                         </dd>
                       </div>
                     </div>

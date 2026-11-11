@@ -15,7 +15,6 @@ const base = {
   },
 };
 
-/** Alertas uniformes del prototipo (misma línea visual que SISAC). */
 export const ui = {
   confirmar: async (titulo: string, texto: string): Promise<boolean> => {
     const result = await MySwal.fire({

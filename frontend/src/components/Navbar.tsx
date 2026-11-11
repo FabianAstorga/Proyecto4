@@ -28,7 +28,6 @@ const SIZES = {
   lg: { box: 'h-14 w-14', title: 'text-2xl', sub: 'text-[9px]' },
 };
 
-/** Identidad propia del prototipo: sin logos ni material de terceros. */
 const Marca = ({
   tone = 'light',
   size = 'md',
@@ -106,6 +105,12 @@ const Marca = ({
 
 const NAV_ITEMS = [
   {
+    id: 'inicio',
+    label: 'Inicio',
+    path: '/inicio',
+    icon: Home,
+  },
+  {
     id: 'ingesta',
     label: 'Ingesta',
     path: '/ingesta',
@@ -122,12 +127,6 @@ const NAV_ITEMS = [
     label: 'Informes',
     path: '/reportes/nuevo',
     icon: FileText,
-  },
-  {
-    id: 'inicio',
-    label: 'Inicio',
-    path: '/inicio',
-    icon: Home,
   },
 ];
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenCvSharp;
 using WebGIS.Server.Data;
@@ -7,12 +8,8 @@ using WebGIS.Server.Services;
 
 namespace WebGIS.Server;
 
-public sealed record ComparadorResult(byte[] ImagenPng, int CambiosDetectados);
+public sealed record ResultadoComparacion(byte[] ImagenPng, int CambiosDetectados);
 
-/// <summary>
-/// Procesamiento de comparación visual A/B.
-/// Todo el algoritmo (carga, filtros, contornos y agrupación) vive en este archivo.
-/// </summary>
 public sealed class ComparadorService
 {
     private const double DiffThreshold = 65;
@@ -23,15 +20,19 @@ public sealed class ComparadorService
     private const double MinSolidity = 0.35;
     private const int GroupDistance = 85;
 
-    public Task<ComparadorResult> ProcesarAsync(
+    public Task<ResultadoComparacion> ProcesarAsync(
         Stream imagenA,
         Stream imagenB,
+        string? algoritmo = null,
         CancellationToken cancellationToken = default) =>
-        Task.Run(() => Procesar(imagenA, imagenB, cancellationToken), cancellationToken);
+        Task.Run(
+            () => Procesar(imagenA, imagenB, algoritmo, cancellationToken),
+            cancellationToken);
 
-    private static ComparadorResult Procesar(
+    private static ResultadoComparacion Procesar(
         Stream streamA,
         Stream streamB,
+        string? algoritmo,
         CancellationToken cancellationToken)
     {
         using var memoryA = new MemoryStream();
@@ -54,6 +55,28 @@ public sealed class ComparadorService
                 new Size(imgA.Width, imgA.Height),
                 interpolation: InterpolationFlags.Area);
         }
+
+        return NormalizarAlgoritmo(algoritmo) switch
+        {
+            "ratio" => ProcesarRatio(imgA, imgB, cancellationToken),
+            "hibrido" => ProcesarHibrido(imgA, imgB, cancellationToken),
+            _ => ProcesarEscalaGrises(imgA, imgB, cancellationToken),
+        };
+    }
+
+    private static string NormalizarAlgoritmo(string? algoritmo) =>
+        (algoritmo ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "ratio" => "ratio",
+            "hibrido" or "hybrid" => "hibrido",
+            _ => "precision",
+        };
+
+    private static ResultadoComparacion ProcesarEscalaGrises(
+        Mat imgA,
+        Mat imgB,
+        CancellationToken cancellationToken)
+    {
 
         using var grayA = new Mat();
         using var grayB = new Mat();
@@ -125,7 +148,7 @@ public sealed class ComparadorService
             RetrievalModes.External,
             ContourApproximationModes.ApproxSimple);
 
-        var candidates = new List<Circle>();
+        var candidates = new List<Circulo>();
 
         foreach (var contour in contours)
         {
@@ -141,13 +164,170 @@ public sealed class ComparadorService
 
             Cv2.MinEnclosingCircle(contour, out Point2f center, out float radius);
             var margin = Math.Max((int)radius + 10, 18);
-            candidates.Add(new Circle((int)center.X, (int)center.Y, margin));
+            candidates.Add(new Circulo((int)center.X, (int)center.Y, margin));
         }
 
-        var finalCircles = GroupCircles(candidates, GroupDistance, true);
+        var circulosFinales = AgruparCirculos(candidates, GroupDistance, true);
+        return CrearResultado(imgB, circulosFinales);
+    }
 
-        using var marked = imgA.Clone();
-        foreach (var circle in finalCircles)
+    private static ResultadoComparacion ProcesarRatio(
+        Mat imgA,
+        Mat imgB,
+        CancellationToken cancellationToken)
+    {
+        using var grayA = new Mat();
+        using var grayB = new Mat();
+        Cv2.CvtColor(imgA, grayA, ColorConversionCodes.BGR2GRAY);
+        Cv2.CvtColor(imgB, grayB, ColorConversionCodes.BGR2GRAY);
+
+        using var maskRatio = CrearMascaraRatio(grayA, grayB, 0.82, 1.18);
+        using var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(3, 3));
+        using var maskClean = new Mat();
+        Cv2.MorphologyEx(maskRatio, maskClean, MorphTypes.Open, kernel);
+
+        var circles = ObtenerCirculos(maskClean, cancellationToken, minArea: 40);
+        return CrearResultado(imgB, circles);
+    }
+
+    private static ResultadoComparacion ProcesarHibrido(
+        Mat imgA,
+        Mat imgB,
+        CancellationToken cancellationToken)
+    {
+        using var grayA = new Mat();
+        using var grayB = new Mat();
+        Cv2.CvtColor(imgA, grayA, ColorConversionCodes.BGR2GRAY);
+        Cv2.CvtColor(imgB, grayB, ColorConversionCodes.BGR2GRAY);
+
+        using var diffAbs = new Mat();
+        using var maskDiff = new Mat();
+        Cv2.Absdiff(grayA, grayB, diffAbs);
+        Cv2.Threshold(diffAbs, maskDiff, 40, 255, ThresholdTypes.Binary);
+
+        using var maskRatio = CrearMascaraRatio(grayA, grayB, 0.82, 1.18);
+        using var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(3, 3));
+        using var diffClean = new Mat();
+        using var ratioClean = new Mat();
+        Cv2.MorphologyEx(maskDiff, diffClean, MorphTypes.Open, kernel);
+        Cv2.MorphologyEx(maskRatio, ratioClean, MorphTypes.Open, kernel);
+
+        using var intersection = new Mat();
+        using var union = new Mat();
+        Cv2.BitwiseAnd(diffClean, ratioClean, intersection);
+        Cv2.BitwiseOr(diffClean, ratioClean, union);
+
+        Cv2.FindContours(
+            union,
+            out Point[][] contours,
+            out _,
+            RetrievalModes.External,
+            ContourApproximationModes.ApproxSimple);
+
+        var circles = new List<Circulo>();
+
+        foreach (var contour in contours)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (Cv2.ContourArea(contour) < 40) continue;
+
+            using var roiMask = new Mat(union.Size(), MatType.CV_8UC1, Scalar.All(0));
+            Cv2.DrawContours(
+                roiMask,
+                new[] { (IEnumerable<Point>)contour },
+                -1,
+                Scalar.All(255),
+                -1);
+
+            using var intersectionRoi = new Mat();
+            using var unionRoi = new Mat();
+            Cv2.BitwiseAnd(intersection, roiMask, intersectionRoi);
+            Cv2.BitwiseAnd(union, roiMask, unionRoi);
+
+            var pixelsIntersection = Cv2.CountNonZero(intersectionRoi);
+            var pixelsUnion = Cv2.CountNonZero(unionRoi);
+            var overlapRatio = pixelsIntersection / (pixelsUnion + 1e-5);
+
+            if (overlapRatio < 0.40) continue;
+
+            Cv2.MinEnclosingCircle(contour, out Point2f center, out float radius);
+            circles.Add(new Circulo(
+                (int)center.X,
+                (int)center.Y,
+                Math.Max((int)radius + 8, 15)));
+        }
+
+        return CrearResultado(imgB, circles);
+    }
+
+    private static Mat CrearMascaraRatio(
+        Mat grayA,
+        Mat grayB,
+        double ratioLow,
+        double ratioHigh)
+    {
+        using var floatA = new Mat();
+        using var floatB = new Mat();
+        grayA.ConvertTo(floatA, MatType.CV_32FC1);
+        grayB.ConvertTo(floatB, MatType.CV_32FC1);
+
+        using var epsilon = new Mat(floatA.Size(), MatType.CV_32FC1, Scalar.All(1e-5));
+        Cv2.Add(floatA, epsilon, floatA);
+        Cv2.Add(floatB, epsilon, floatB);
+
+        using var ratioMap = new Mat();
+        Cv2.Divide(floatA, floatB, ratioMap);
+
+        using var low = new Mat(ratioMap.Size(), MatType.CV_32FC1, Scalar.All(ratioLow));
+        using var high = new Mat(ratioMap.Size(), MatType.CV_32FC1, Scalar.All(ratioHigh));
+        using var maskLow = new Mat();
+        using var maskHigh = new Mat();
+        var maskRatio = new Mat();
+        Cv2.Compare(ratioMap, low, maskLow, CmpTypes.LT);
+        Cv2.Compare(ratioMap, high, maskHigh, CmpTypes.GT);
+        Cv2.BitwiseOr(maskLow, maskHigh, maskRatio);
+
+        return maskRatio;
+    }
+
+    private static List<Circulo> ObtenerCirculos(
+        Mat mask,
+        CancellationToken cancellationToken,
+        int minArea)
+    {
+        Cv2.FindContours(
+            mask,
+            out Point[][] contours,
+            out _,
+            RetrievalModes.External,
+            ContourApproximationModes.ApproxSimple);
+
+        var circles = new List<Circulo>();
+
+        foreach (var contour in contours)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (Cv2.ContourArea(contour) < minArea) continue;
+
+            Cv2.MinEnclosingCircle(contour, out Point2f center, out float radius);
+            circles.Add(new Circulo(
+                (int)center.X,
+                (int)center.Y,
+                Math.Max((int)radius + 8, 15)));
+        }
+
+        return circles;
+    }
+
+    private static ResultadoComparacion CrearResultado(
+        Mat imagenBase,
+        IReadOnlyList<Circulo> circles)
+    {
+        using var marked = imagenBase.Clone();
+
+        foreach (var circle in circles)
         {
             var center = new Point(circle.X, circle.Y);
             Cv2.Circle(marked, center, circle.Radius, new Scalar(0, 0, 255), 2, LineTypes.AntiAlias);
@@ -157,28 +337,24 @@ public sealed class ComparadorService
         if (!Cv2.ImEncode(".png", marked, out var png))
             throw new InvalidOperationException("No fue posible generar la imagen de resultado.");
 
-        return new ComparadorResult(png, finalCircles.Count);
+        return new ResultadoComparacion(png, circles.Count);
     }
 
-    /// <summary>
-    /// Fusiona círculos cercanos o solapados y calcula el círculo envolvente del grupo.
-    /// Es la misma lógica del prototipo Python.
-    /// </summary>
-    private static List<Circle> GroupCircles(
-        IReadOnlyList<Circle> circles,
+    private static List<Circulo> AgruparCirculos(
+        IReadOnlyList<Circulo> circles,
         int maxDistance,
         bool evaluateOverlap)
     {
         if (circles.Count == 0) return [];
 
         var visited = new bool[circles.Count];
-        var grouped = new List<Circle>();
+        var grouped = new List<Circulo>();
 
         for (var i = 0; i < circles.Count; i++)
         {
             if (visited[i]) continue;
 
-            var cluster = new List<Circle> { circles[i] };
+            var cluster = new List<Circulo> { circles[i] };
             visited[i] = true;
 
             for (var index = 0; index < cluster.Count; index++)
@@ -222,7 +398,7 @@ public sealed class ComparadorService
 
             using var pointsMat = Mat.FromArray(points.ToArray());
             Cv2.MinEnclosingCircle(pointsMat, out Point2f center, out float radius);
-            grouped.Add(new Circle(
+            grouped.Add(new Circulo(
                 (int)center.X,
                 (int)center.Y,
                 (int)radius + 12));
@@ -231,7 +407,7 @@ public sealed class ComparadorService
         return grouped;
     }
 
-    private readonly record struct Circle(int X, int Y, int Radius);
+    private readonly record struct Circulo(int X, int Y, int Radius);
 }
 
 public static class ComparadorEndpoints
@@ -243,6 +419,7 @@ public static class ComparadorEndpoints
                 async (
                     IFormFile imagenA,
                     IFormFile imagenB,
+                    [FromForm] string? algoritmo,
                     ComparadorService servicio,
                     HttpContext context,
                     CancellationToken cancellationToken) =>
@@ -263,6 +440,7 @@ public static class ComparadorEndpoints
                         var result = await servicio.ProcesarAsync(
                             streamA,
                             streamB,
+                            algoritmo,
                             cancellationToken);
 
                         context.Response.Headers["X-Cambios-Detectados"] =
@@ -353,6 +531,7 @@ public static class ComparadorEndpoints
                         var result = await servicio.ProcesarAsync(
                             streamA,
                             streamB,
+                            request.Algoritmo,
                             cancellationToken);
 
                         context.Response.Headers["X-Cambios-Detectados"] =

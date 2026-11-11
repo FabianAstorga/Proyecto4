@@ -37,7 +37,10 @@ public sealed record FotografiaGaleriaDto(
     string CodigoVuelo,
     string SectorCodigo);
 
-public sealed record CompararFotosRequest(long IdFotoA, long IdFotoB);
+public sealed record CompararFotosRequest(
+    long IdFotoA,
+    long IdFotoB,
+    string? Algoritmo = null);
 
 public sealed record VueloResumenDto(
     long IdVuelo,

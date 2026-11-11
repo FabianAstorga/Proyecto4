@@ -19,9 +19,6 @@ const VARIANTS: Record<ModuloButtonVariant, string> = {
     'border border-red-200 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-300/50',
 };
 
-/**
- * Botón común de los módulos: misma altura, tipografía, radio y transición.
- */
 export const ModuloButton = ({
   variant = 'primary',
   className,

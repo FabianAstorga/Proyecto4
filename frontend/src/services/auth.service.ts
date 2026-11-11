@@ -1,15 +1,6 @@
 import type { AuthSession, Role, SessionUser } from '@/types';
 import { http, sleep, TOKEN_KEY, USER_KEY, USE_MOCK } from './http';
 
-/**
- * Contrato previsto con ASP.NET Core:
- *   POST /api/auth/login              { email, password } -> { token, user }
- *   POST /api/auth/recover/request    { email }            -> 202
- *   POST /api/auth/recover/confirm    { email, code, newPassword } -> 204
- *
- * Mientras el backend no exista, cualquier correo con una contraseña de 4+
- * caracteres inicia sesión en modo demostración.
- */
 
 const DEMO_CODE = '482913';
 
@@ -115,7 +106,6 @@ export const authService = {
       try {
         await http.post('/api/auth/logout');
       } catch {
-        // El cierre local debe ocurrir aunque el servidor no responda.
       }
     }
     localStorage.removeItem(TOKEN_KEY);

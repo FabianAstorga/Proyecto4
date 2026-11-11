@@ -33,7 +33,6 @@ const MONTHS_LONG = [
   'diciembre',
 ];
 
-/** Evita el desfase de un día al interpretar fechas ISO sin hora. */
 export const parseISODate = (iso: string): Date => {
   const [year, month, day] = iso.split('-').map(Number);
   return new Date(year, (month ?? 1) - 1, day ?? 1);

@@ -21,8 +21,6 @@ public sealed class PasswordRecoveryService(
         var exists = await context.Usuarios
             .AnyAsync(x => x.Email.ToLower() == normalized && x.Activo, cancellationToken);
 
-        // No revelamos si el correo existe. El código solo se genera y registra
-        // cuando hay una cuenta activa.
         if (!exists) return null;
 
         var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();

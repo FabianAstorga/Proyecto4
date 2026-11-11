@@ -47,7 +47,6 @@ const SIZES = {
   lg: { box: 'h-14 w-14', title: 'text-2xl', sub: 'text-[9px]' },
 };
 
-/** Identidad propia del prototipo: sin logos ni material de terceros. */
 const Marca = ({
   tone = 'light',
   size = 'md',
@@ -381,7 +380,6 @@ export const Login = () => {
           isLoginOpen && 'overflow-hidden',
         )}
       >
-        {/* Portada: imagen fija con movimiento lento de cámara */}
         <section className="relative h-screen w-full snap-start snap-always overflow-hidden">
           <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
             <img
@@ -432,7 +430,6 @@ export const Login = () => {
           </div>
         </section>
 
-        {/* Reportes: carrusel horizontal dentro de la segunda sección */}
         <section className="reports-gradient relative h-screen w-full snap-start snap-always overflow-hidden">
           <div className="relative z-10 flex h-full flex-col justify-center px-5 pb-10 pt-24 md:px-8">
             <div className="mx-auto w-full max-w-[1500px]">
@@ -522,7 +519,6 @@ export const Login = () => {
         </div>
       </header>
 
-      {/* Slider lateral de acceso: ocupa toda la pantalla */}
       <AnimatePresence>
         {isLoginOpen && (
           <motion.div

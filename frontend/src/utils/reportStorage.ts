@@ -23,7 +23,6 @@ const writeJSON = (key: string, value: unknown) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // El almacenamiento puede estar lleno o deshabilitado.
   }
 };
 

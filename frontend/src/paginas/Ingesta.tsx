@@ -13,7 +13,7 @@ interface ImagenCargada {
   url: string;
 }
 
-const newId = () =>
+const nuevoId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -73,9 +73,9 @@ export const Ingesta = () => {
     [],
   );
 
-  const addFiles = (files: FileList | File[]) => {
+  const agregarArchivos = (files: FileList | File[]) => {
     const next = Array.from(files).map((file) => ({
-      id: newId(),
+      id: nuevoId(),
       file,
       url: URL.createObjectURL(file),
     }));
@@ -84,7 +84,7 @@ export const Ingesta = () => {
     setItems((prev) => [...prev, ...next]);
   };
 
-  const duplicateItem = (id: string) => {
+  const duplicarImagen = (id: string) => {
     setItems((prev) => {
       const index = prev.findIndex((item) => item.id === id);
       if (index < 0) return prev;
@@ -92,7 +92,7 @@ export const Ingesta = () => {
       const source = prev[index];
       const copy: ImagenCargada = {
         ...source,
-        id: newId(),
+        id: nuevoId(),
         url: URL.createObjectURL(source.file),
       };
 
@@ -100,7 +100,7 @@ export const Ingesta = () => {
     });
   };
 
-  const removeItem = (id: string) => {
+  const eliminarImagen = (id: string) => {
     setItems((prev) => {
       const target = prev.find((item) => item.id === id);
       if (target) URL.revokeObjectURL(target.url);
@@ -108,7 +108,7 @@ export const Ingesta = () => {
     });
   };
 
-  const goToDetail = async () => {
+  const irAlDetalle = async () => {
     if (items.length === 0 || !idSector || ingresando) return;
 
     setIngresando(true);
@@ -131,10 +131,10 @@ export const Ingesta = () => {
     }
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+  const manejarSoltar = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragging(false);
-    addFiles(event.dataTransfer.files);
+    agregarArchivos(event.dataTransfer.files);
   };
 
   return (
@@ -191,7 +191,7 @@ export const Ingesta = () => {
             setDragging(true);
           }}
           onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
+          onDrop={manejarSoltar}
           className={cn(
             'relative h-[360px] cursor-pointer overflow-hidden border-2 border-dashed bg-slate-50 outline-none transition-colors md:h-[420px]',
             dragging
@@ -207,7 +207,7 @@ export const Ingesta = () => {
             multiple
             className="hidden"
             onChange={(event) => {
-              if (event.target.files) addFiles(event.target.files);
+              if (event.target.files) agregarArchivos(event.target.files);
               event.target.value = '';
             }}
           />
@@ -250,7 +250,7 @@ export const Ingesta = () => {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          duplicateItem(item.id);
+                          duplicarImagen(item.id);
                         }}
                         aria-label={`Duplicar ${item.file.name}`}
                         title="Duplicar imagen"
@@ -262,7 +262,7 @@ export const Ingesta = () => {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          removeItem(item.id);
+                          eliminarImagen(item.id);
                         }}
                         aria-label={`Eliminar ${item.file.name}`}
                         title="Eliminar imagen"
@@ -284,7 +284,7 @@ export const Ingesta = () => {
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <ModuloButton
-            onClick={() => void goToDetail()}
+            onClick={() => void irAlDetalle()}
             disabled={items.length === 0 || !idSector || ingresando}
           >
             {ingresando ? (

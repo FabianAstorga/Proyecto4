@@ -3,10 +3,6 @@ using WebGIS.Server.Hubs;
 
 namespace WebGIS.Server.Services;
 
-/// <summary>
-/// Desacopla la generación de informes del envío por SignalR. Cualquier
-/// servicio puede encolar un evento y el worker lo emite a los clientes.
-/// </summary>
 public sealed class ReportesWorker(
     ReportesQueue queue,
     IHubContext<ReportesHub> hub,

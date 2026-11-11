@@ -12,10 +12,6 @@ interface ModuloHeaderProps {
   className?: string;
 }
 
-/**
- * Cabecera común de los módulos. Mantiene el mismo tamaño de título,
- * subtítulo y bloqueo visual en Home, Ingesta, Comparador e Informes.
- */
 export const ModuloHeader = ({
   icon: Icon,
   eyebrow,

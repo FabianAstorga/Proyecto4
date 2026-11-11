@@ -1,14 +1,4 @@
-/**
- * Cliente HTTP mínimo y tipado.
- *
- * El prototipo funciona con VITE_USE_MOCK=true. Cuando el backend ASP.NET Core
- * esté disponible, basta con poner VITE_USE_MOCK=false y VITE_API_URL=https://...
- * Los servicios conservan los mismos contratos de entrada/salida.
- */
 
-// Por defecto se usan rutas relativas (/api/...). En desarrollo, Vite las
-// redirige al servidor ASP.NET Core mediante el proxy configurado en
-// vite.config.ts. En producción, el frontend y la API comparten el mismo origen.
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? '';
 
@@ -54,7 +44,6 @@ async function request<T>(path: string, options: HttpOptions = {}): Promise<T> {
       const problem = (await response.json()) as { detail?: string; title?: string };
       message = problem.detail ?? problem.title ?? message;
     } catch {
-      // La API podría devolver texto plano o un cuerpo vacío.
     }
     throw new ApiError(message, response.status);
   }

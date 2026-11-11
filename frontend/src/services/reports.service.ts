@@ -15,15 +15,6 @@ export interface CreateReportInput {
   user: SessionUser;
 }
 
-/**
- * Contrato previsto:
- *   POST /api/v1/reportes
- *   { meta, incidentIds, comparison, includeComparison }
- *   -> 201 { id, numero, createdAt, fileName, ... }
- *
- * En el prototipo se simula la compilación y se devuelve la metadata del PDF.
- * La descarga real se hará contra /api/v1/reportes/{id}/pdf (QuestPDF).
- */
 export const reportsService = {
   async createReport(input: CreateReportInput): Promise<GeneratedReport> {
     if (USE_MOCK) {

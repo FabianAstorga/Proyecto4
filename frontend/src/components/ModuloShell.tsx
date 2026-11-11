@@ -8,12 +8,6 @@ interface ModuloShellProps {
   closing?: boolean;
 }
 
-/**
- * Marco visual de los módulos: degradado animado EPA/ZEAP y una tarjeta
- * central transparente. El fondo de cada página cubre la tarjeta; así, al
- * deslizar entre módulos, el hueco entre ambas muestra el degradado y no una
- * franja blanca.
- */
 export const ModuloShell = ({
   children,
   cardClassName,

@@ -32,7 +32,6 @@ public sealed class AuthController(
         }
         catch (Exception exception)
         {
-            // Un hash inválido en datos antiguos no debe botar el endpoint.
             return Unauthorized(new
             {
                 detail = "No fue posible validar las credenciales.",
@@ -82,8 +81,6 @@ public sealed class AuthController(
             request.Email,
             cancellationToken);
 
-        // En producción no se devuelve el código; se envía por correo.
-        // Para el prototipo, en Development se expone para poder probar el flujo.
         return Accepted(new RecoverResponse(
             "Si el correo existe, enviamos un código de recuperación.",
             environment.IsDevelopment() ? code : null));

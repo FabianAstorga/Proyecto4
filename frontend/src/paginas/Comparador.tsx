@@ -20,7 +20,10 @@ import { ModuloButton } from '@/components/ModuloButton';
 import { ModuloHeader } from '@/components/ModuloHeader';
 import { Cortina, ImpresionComparacion } from '@/components/Comparador';
 import { getSector } from '@/mocks/data';
-import { processComparisonByPhotos } from '@/services/comparison.service';
+import {
+  compararFotografias,
+  type AlgoritmoComparador,
+} from '@/services/comparison.service';
 import {
   ingestaService,
   type FotografiaGaleria,
@@ -32,6 +35,28 @@ import { cn } from '@/utils/format';
 
 type ComparadorModo = 'lote' | 'imagenes' | 'zona';
 type Paso = 1 | 2 | 3;
+
+const ALGORITMOS: Array<{
+  value: AlgoritmoComparador;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'precision',
+    label: 'Escala de Grises',
+    description: 'Diferencia + ratio con agrupación de círculos.',
+  },
+  {
+    value: 'ratio',
+    label: 'Ratio',
+    description: 'División de imagen A sobre imagen B.',
+  },
+  {
+    value: 'hibrido',
+    label: 'Híbrido',
+    description: 'Diferencia + ratio con validación de consenso.',
+  },
+];
 
 const PASOS: Array<{ numero: Paso; label: string }> = [
   { numero: 1, label: 'Origen' },
@@ -47,15 +72,15 @@ const SECTOR_IDS: Record<string, SectorId> = {
   'ACCESO-VIAL': 'acceso-vial',
 };
 
-const toSectorId = (codigo: string): SectorId =>
+const obtenerSectorId = (codigo: string): SectorId =>
   SECTOR_IDS[codigo.toUpperCase()] ?? 'zeap-c';
 
-const toCapture = (foto: FotografiaGaleria): Capture => {
+const crearCaptura = (foto: FotografiaGaleria): Capture => {
   const fecha = new Date(foto.fechaCaptura);
 
   return {
     id: `foto-${foto.idFoto}`,
-    sectorId: toSectorId(foto.sectorCodigo),
+    sectorId: obtenerSectorId(foto.sectorCodigo),
     fecha: Number.isNaN(fecha.getTime())
       ? foto.fechaCaptura.slice(0, 10)
       : fecha.toISOString().slice(0, 10),
@@ -73,33 +98,35 @@ const toCapture = (foto: FotografiaGaleria): Capture => {
   };
 };
 
-const formatBytes = (bytes: number | null) => {
+const formatearBytes = (bytes: number | null) => {
   if (bytes === null) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-const formatDimensions = (foto: FotografiaGaleria) =>
+const formatearDimensiones = (foto: FotografiaGaleria) =>
   foto.anchoPx && foto.altoPx ? `${foto.anchoPx}×${foto.altoPx}` : '—';
 
 export const Comparador = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryIdVuelo = searchParams.get('idVuelo');
 
   const [paso, setPaso] = useState<Paso>(1);
   const [modo, setModo] = useState<ComparadorModo>('lote');
+  const [algoritmo, setAlgoritmo] = useState<AlgoritmoComparador>('precision');
   const [vuelos, setVuelos] = useState<VueloResumen[]>([]);
   const [fotos, setFotos] = useState<FotografiaGaleria[]>([]);
   const [idVuelo, setIdVuelo] = useState('');
   const [cargando, setCargando] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   const [fotoA, setFotoA] = useState<FotografiaGaleria | null>(null);
   const [fotoB, setFotoB] = useState<FotografiaGaleria | null>(null);
-  const [processedUrl, setProcessedUrl] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [processError, setProcessError] = useState<string | null>(null);
+  const [urlProcesada, setUrlProcesada] = useState<string | null>(null);
+  const [procesando, setProcesando] = useState(false);
+  const [errorProceso, setErrorProceso] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -114,7 +141,7 @@ export const Comparador = () => {
         setVuelos(lotes);
         setFotos(todasLasFotos);
 
-        const queryId = Number(searchParams.get('idVuelo'));
+        const queryId = Number(queryIdVuelo);
         const inicial =
           lotes.find((lote) => lote.idVuelo === queryId) ?? lotes[0];
 
@@ -122,7 +149,7 @@ export const Comparador = () => {
       })
       .catch((exception: unknown) => {
         if (!active) return;
-        setLoadError(
+        setErrorCarga(
           exception instanceof Error
             ? exception.message
             : 'No fue posible cargar los lotes y fotografías.',
@@ -135,7 +162,7 @@ export const Comparador = () => {
     return () => {
       active = false;
     };
-  }, [searchParams]);
+  }, [queryIdVuelo]);
 
   const fotosFiltradas = useMemo(() => {
     if (modo !== 'lote') return fotos;
@@ -147,70 +174,72 @@ export const Comparador = () => {
     (vuelo) => vuelo.idVuelo === Number(idVuelo),
   );
 
+  const lotesConFotos = new Set(fotos.map((foto) => foto.idVuelo)).size;
+
   const sectorId = fotoA
-    ? toSectorId(fotoA.sectorCodigo)
+    ? obtenerSectorId(fotoA.sectorCodigo)
     : fotoB
-      ? toSectorId(fotoB.sectorCodigo)
+      ? obtenerSectorId(fotoB.sectorCodigo)
       : vueloSeleccionado
-        ? toSectorId(vueloSeleccionado.sectorCodigo)
+        ? obtenerSectorId(vueloSeleccionado.sectorCodigo)
         : '';
 
   const sector = sectorId ? getSector(sectorId) : undefined;
 
-  const captureA = fotoA ? toCapture(fotoA) : null;
-  const processedCapture: Capture | null =
-    captureA && processedUrl
+  const capturaA = fotoA ? crearCaptura(fotoA) : null;
+  const capturaProcesada: Capture | null =
+    capturaA && urlProcesada
       ? {
-          ...captureA,
+          ...capturaA,
           id: 'deteccion-cambios',
           archivo: 'Detección de cambios',
-          src: processedUrl,
+          src: urlProcesada,
         }
       : null;
-  const comparison =
-    captureA && processedCapture
-      ? { captureA, captureB: processedCapture }
+  const comparacion =
+    capturaA && capturaProcesada
+      ? { captureA: capturaA, captureB: capturaProcesada }
       : null;
 
   useEffect(
     () => () => {
-      if (processedUrl) URL.revokeObjectURL(processedUrl);
+      if (urlProcesada) URL.revokeObjectURL(urlProcesada);
     },
-    [processedUrl],
+    [urlProcesada],
   );
 
   useEffect(() => {
     if (paso !== 3 || !fotoA || !fotoB) {
-      setProcessedUrl(null);
-      setProcessError(null);
-      setProcessing(false);
+      setUrlProcesada(null);
+      setErrorProceso(null);
+      setProcesando(false);
       return;
     }
 
     const controller = new AbortController();
-    setProcessedUrl(null);
-    setProcessError(null);
-    setProcessing(true);
+    setUrlProcesada(null);
+    setErrorProceso(null);
+    setProcesando(true);
 
-    processComparisonByPhotos(fotoA.idFoto, fotoB.idFoto, controller.signal)
-      .then(({ image }) => {
+    compararFotografias(fotoA.idFoto, fotoB.idFoto, algoritmo, controller.signal)
+      .then(({ imagen }) => {
         if (controller.signal.aborted) return;
-        setProcessedUrl(URL.createObjectURL(image));
+        setUrlProcesada(URL.createObjectURL(imagen));
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
-        setProcessError(
+        setErrorProceso(
           error instanceof Error
             ? error.message
             : 'No fue posible procesar las imágenes.',
         );
       })
       .finally(() => {
-        if (!controller.signal.aborted) setProcessing(false);
+        if (!controller.signal.aborted) setProcesando(false);
       });
 
     return () => controller.abort();
-  }, [paso, fotoA, fotoB]);
+  }, [paso, fotoA, fotoB, algoritmo]);
 
   const cambiarModo = (next: ComparadorModo) => {
     setModo(next);
@@ -235,14 +264,14 @@ export const Comparador = () => {
     }
   };
 
-  const includeInReport = () => {
-    if (!comparison || !captureA || !processedCapture || !sectorId) return;
+  const incluirEnReporte = () => {
+    if (!comparacion || !capturaA || !capturaProcesada || !sectorId) return;
     saveComparisonSelection({
       sectorId,
-      captureAId: captureA.id,
-      captureBId: processedCapture.id,
-      captureADate: captureA.fecha,
-      captureBDate: processedCapture.fecha,
+      captureAId: capturaA.id,
+      captureBId: capturaProcesada.id,
+      captureADate: capturaA.fecha,
+      captureBDate: capturaProcesada.fecha,
     });
     navigate('/reportes/nuevo', { state: { fromComparator: true } });
   };
@@ -355,6 +384,24 @@ export const Comparador = () => {
                   />
                 </div>
 
+                <div className="border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    Método de comparación
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {ALGORITMOS.map((opcion) => (
+                      <OpcionAlgoritmo
+                        key={opcion.value}
+                        active={algoritmo === opcion.value}
+                        label={opcion.label}
+                        description={opcion.description}
+                        value={opcion.value}
+                        onChange={setAlgoritmo}
+                      />
+                    ))}
+                  </div>
+                </div>
+
                 {modo === 'lote' && (
                   <div className="flex flex-col gap-3 border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -363,7 +410,7 @@ export const Comparador = () => {
                       </p>
                       <p className="mt-1 text-[10px] font-medium text-slate-400">
                         {vueloSeleccionado
-                          ? `${vueloSeleccionado.totalArchivos} imágenes · ${vueloSeleccionado.estadoCarga}`
+                          ? `${vueloSeleccionado.totalArchivos} imágenes`
                           : 'Selecciona un lote cargado'}
                       </p>
                     </div>
@@ -387,8 +434,9 @@ export const Comparador = () => {
 
                 {modo === 'imagenes' && (
                   <div className="border border-sky-200 bg-sky-50 px-4 py-3 text-[10px] font-medium leading-relaxed text-sky-800">
-                    Se mostrarán todas las fotografías almacenadas. Puedes combinar
-                    imágenes de distintos lotes.
+                    Se mostrarán todas las fotografías almacenadas en el sistema,
+                    combinando todos los lotes. Actualmente hay {fotos.length}{' '}
+                    imágenes en {lotesConFotos} lotes.
                   </div>
                 )}
 
@@ -405,12 +453,12 @@ export const Comparador = () => {
                   </div>
                 )}
 
-                {loadError && (
+                {errorCarga && (
                   <div
                     role="alert"
                     className="border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700"
                   >
-                    {loadError}
+                    {errorCarga}
                   </div>
                 )}
               </div>
@@ -444,6 +492,18 @@ export const Comparador = () => {
               </header>
 
               <div className="p-4 md:p-6">
+                {modo === 'imagenes' && (
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border border-sky-200 bg-sky-50 px-3 py-2.5">
+                    <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-sky-800">
+                      <Images className="h-3.5 w-3.5" />
+                      Todas las imágenes del sistema
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-sky-700/70">
+                      {fotos.length} imágenes · {lotesConFotos} lotes
+                    </span>
+                  </div>
+                )}
+
                 <div className="mb-4 grid gap-2 sm:grid-cols-2">
                   <ResumenSeleccion
                     slot="A"
@@ -533,8 +593,8 @@ export const Comparador = () => {
                               {foto.nombreArchivo}
                             </p>
                             <p className="mt-1 truncate text-[9px] font-medium text-slate-400">
-                              {foto.codigoVuelo} · {formatBytes(foto.tamanoBytes)} ·{' '}
-                              {formatDimensions(foto)}
+                              {foto.codigoVuelo} · {formatearBytes(foto.tamanoBytes)} ·{' '}
+                              {formatearDimensiones(foto)}
                             </p>
                           </div>
 
@@ -597,7 +657,7 @@ export const Comparador = () => {
                   />
                 </div>
 
-                {processing && (
+                {procesando && (
                   <div className="flex items-center gap-3 border border-sky-200 bg-sky-50 px-4 py-3 text-sky-800">
                     <RefreshCw className="h-4 w-4 animate-spin" />
                     <p className="text-[10px] font-black uppercase tracking-[0.16em]">
@@ -606,16 +666,16 @@ export const Comparador = () => {
                   </div>
                 )}
 
-                {processError && (
+                {errorProceso && (
                   <div
                     role="alert"
                     className="border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700"
                   >
-                    {processError}
+                    {errorProceso}
                   </div>
                 )}
 
-                {comparison && (
+                {comparacion && (
                   <motion.div
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -624,37 +684,41 @@ export const Comparador = () => {
                   >
                     <div className="border border-white/10 bg-[#001a35] p-2 shadow-2xl md:p-3">
                       <Cortina
-                        key={`${comparison.captureA.id}-${comparison.captureB.id}`}
-                        captureA={comparison.captureA}
-                        captureB={comparison.captureB}
+                        key={`${comparacion.captureA.id}-${comparacion.captureB.id}`}
+                        captureA={comparacion.captureA}
+                        captureB={comparacion.captureB}
                       />
                     </div>
 
-                    <div className="grid gap-2 border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-3">
-                      <ModuloButton
-                        onClick={includeInReport}
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={incluirEnReporte}
                         disabled={!sectorId}
-                        className="w-full"
+                        title="Ingresar en reporte"
+                        aria-label="Ingresar en reporte"
+                        className="grid h-10 w-10 place-items-center border border-[#003B5C] bg-[#003B5C] text-white transition-colors hover:bg-[#002B45] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <FilePlus2 className="h-4 w-4" />
-                        Ingresar en reporte
-                      </ModuloButton>
-                      <ModuloButton
-                        variant="secondary"
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => window.print()}
-                        className="w-full"
+                        title="Exportar incidencia a PDF"
+                        aria-label="Exportar incidencia a PDF"
+                        className="grid h-10 w-10 place-items-center border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#0F766E]/40 hover:text-[#0F766E]"
                       >
                         <FileDown className="h-4 w-4" />
-                        Exportar incidencia a PDF
-                      </ModuloButton>
-                      <ModuloButton
-                        variant="secondary"
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => navigate('/reportes/nuevo')}
-                        className="w-full"
+                        title="Ir a reportes"
+                        aria-label="Ir a reportes"
+                        className="grid h-10 w-10 place-items-center border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#0F766E]/40 hover:text-[#0F766E]"
                       >
                         <ClipboardList className="h-4 w-4" />
-                        Ir a reportes
-                      </ModuloButton>
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -681,16 +745,69 @@ export const Comparador = () => {
         </div>
       </div>
 
-      {comparison && (
+      {comparacion && (
         <ImpresionComparacion
           sectorName={sector?.nombre ?? vueloSeleccionado?.sectorCodigo ?? 'Sector EPA'}
-          captureA={comparison.captureA}
-          captureB={comparison.captureB}
+          captureA={comparacion.captureA}
+          captureB={comparacion.captureB}
         />
       )}
     </>
   );
 };
+
+const OpcionAlgoritmo = ({
+  active,
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  active: boolean;
+  label: string;
+  description: string;
+  value: AlgoritmoComparador;
+  onChange: (value: AlgoritmoComparador) => void;
+}) => (
+  <label
+    className={cn(
+      'flex cursor-pointer items-start gap-2.5 border p-3 transition-colors',
+      active
+        ? 'border-[#003B5C] bg-[#003B5C] text-white'
+        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+    )}
+  >
+    <input
+      type="radio"
+      name="algoritmo-comparacion"
+      value={value}
+      checked={active}
+      onChange={() => onChange(value)}
+      className="sr-only"
+    />
+    <span
+      className={cn(
+        'mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border',
+        active ? 'border-white bg-white' : 'border-slate-300 bg-white',
+      )}
+    >
+      {active && <span className="h-2 w-2 rounded-full bg-[#003B5C]" />}
+    </span>
+    <span className="min-w-0">
+      <span className="block text-[10px] font-black uppercase tracking-[0.14em]">
+        {label}
+      </span>
+      <span
+        className={cn(
+          'mt-1 block text-[9px] font-medium leading-relaxed',
+          active ? 'text-white/65' : 'text-slate-400',
+        )}
+      >
+        {description}
+      </span>
+    </span>
+  </label>
+);
 
 const ModoBoton = ({
   active,
@@ -811,7 +928,7 @@ const ResumenSeleccion = ({
         {foto?.nombreArchivo ?? `Sin imagen ${slot}`}
       </p>
       <p className="mt-0.5 truncate text-[9px] font-medium text-slate-400">
-        {foto ? `${foto.codigoVuelo} · ${formatBytes(foto.tamanoBytes)}` : 'Pendiente de seleccionar'}
+        {foto ? `${foto.codigoVuelo} · ${formatearBytes(foto.tamanoBytes)}` : 'Pendiente de seleccionar'}
       </p>
     </div>
 

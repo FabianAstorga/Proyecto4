@@ -5,7 +5,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { GripVertical, Grid3X3, RotateCcw } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
 import type { Capture } from '@/types';
 import { cn } from '@/utils/format';
 
@@ -24,11 +24,6 @@ interface CortinaProps {
   className?: string;
 }
 
-/**
- * Comparador tipo cortina (RF-06).
- * Dos capturas superpuestas; la capa "A" se recorta con clip-path.
- * Funciona con ratón, touch y teclado (flechas / Home / End).
- */
 export const Cortina = ({
   captureA,
   captureB,
@@ -38,7 +33,6 @@ export const Cortina = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(50);
   const [dragging, setDragging] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
 
   const updateFromClientX = useCallback((clientX: number) => {
     const element = containerRef.current;
@@ -81,10 +75,6 @@ export const Cortina = ({
     setPosition(Math.min(100, Math.max(0, next)));
   };
 
-  const reset = () => {
-    setPosition(50);
-  };
-
   return (
     <div className={cn('space-y-3', className)}>
       <div
@@ -99,9 +89,7 @@ export const Cortina = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        onDoubleClick={reset}
       >
-        {/* Capa B (después) */}
         <img
           src={captureB.src}
           alt={`Captura B, ${captureB.archivo}`}
@@ -130,7 +118,6 @@ export const Cortina = ({
           </div>
         ))}
 
-        {/* Capa A (antes), recortada por la posición de la cortina */}
         <div
           className="absolute inset-0 z-[4] will-change-[clip-path]"
           style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
@@ -143,19 +130,6 @@ export const Cortina = ({
           />
         </div>
 
-        {/* Grillas y retículas opcionales */}
-        {showGrid && (
-          <div
-            className="pointer-events-none absolute inset-0 z-[6] opacity-40"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px)',
-              backgroundSize: '8.333% 8.333%',
-            }}
-          />
-        )}
-
-        {/* Etiquetas superiores */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[7] flex items-start justify-between bg-gradient-to-b from-black/60 to-transparent p-3 md:p-4">
           <div className="flex items-center gap-2">
             <span className="grid h-6 w-6 place-items-center bg-blue-600 text-[10px] font-black text-white shadow-lg">
@@ -180,7 +154,6 @@ export const Cortina = ({
           </div>
         </div>
 
-        {/* Cortina */}
         <div
           className="pointer-events-none absolute inset-y-0 z-[8]"
           style={{ left: `${position}%` }}
@@ -204,33 +177,6 @@ export const Cortina = ({
           </div>
         </div>
 
-      </div>
-
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowGrid((value) => !value)}
-            className={cn(
-              'flex items-center gap-1.5 border px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest transition-colors',
-              showGrid
-                ? 'border-[#002855] bg-[#002855] text-white'
-                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-[#002855]',
-            )}
-            aria-pressed={showGrid}
-          >
-            <Grid3X3 className="h-3 w-3" />
-            Retícula
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            className="flex items-center gap-1.5 border border-slate-200 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-[#002855]"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Reiniciar
-          </button>
-        </div>
       </div>
     </div>
   );

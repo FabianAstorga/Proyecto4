@@ -5,12 +5,6 @@ import type {
   Sector,
 } from '@/types';
 
-/**
- * Datos simulados del prototipo.
- * Cuando el backend ASP.NET Core esté disponible, estos arreglos se reemplazan
- * por las respuestas de /api/v1/sectores, /api/v1/vuelos, /api/v1/fotografias
- * e /api/v1/incidencias (ver src/services).
- */
 
 export const SECTORS: Sector[] = [
   {
@@ -86,19 +80,14 @@ interface CaptureSeed {
 }
 
 const CAPTURE_SEEDS: CaptureSeed[] = [
-  // Patio Norte
   { id: 'cap-pn-a', sectorId: 'patio-norte', fecha: '2026-06-14', hora: '10:42:18', altitud: 78.4, gimbal: -90, lat: -18.47482, lng: -70.31162, letter: 'a' },
   { id: 'cap-pn-b', sectorId: 'patio-norte', fecha: '2026-09-14', hora: '10:37:54', altitud: 76.1, gimbal: -90, lat: -18.47479, lng: -70.31158, letter: 'b' },
-  // Patio Sur
   { id: 'cap-ps-a', sectorId: 'patio-sur', fecha: '2026-06-14', hora: '11:05:42', altitud: 82.7, gimbal: -90, lat: -18.47836, lng: -70.30951, letter: 'a' },
   { id: 'cap-ps-b', sectorId: 'patio-sur', fecha: '2026-09-14', hora: '11:02:09', altitud: 81.3, gimbal: -88, lat: -18.47833, lng: -70.30947, letter: 'b' },
-  // Muelle 1
   { id: 'cap-m1-a', sectorId: 'muelle-1', fecha: '2026-06-14', hora: '09:58:03', altitud: 94.2, gimbal: -90, lat: -18.47251, lng: -70.31721, letter: 'a' },
   { id: 'cap-m1-b', sectorId: 'muelle-1', fecha: '2026-09-14', hora: '09:55:37', altitud: 92.8, gimbal: -90, lat: -18.47248, lng: -70.31717, letter: 'b' },
-  // Acceso Vial
   { id: 'cap-av-a', sectorId: 'acceso-vial', fecha: '2026-06-14', hora: '12:14:26', altitud: 71.6, gimbal: -87, lat: -18.48103, lng: -70.30584, letter: 'a' },
   { id: 'cap-av-b', sectorId: 'acceso-vial', fecha: '2026-09-14', hora: '12:11:49', altitud: 73.2, gimbal: -88, lat: -18.48101, lng: -70.30579, letter: 'b' },
-  // ZEAP Sector C
   { id: 'cap-zc-a', sectorId: 'zeap-c', fecha: '2026-06-14', hora: '10:22:11', altitud: 88.9, gimbal: -90, lat: -18.48741, lng: -70.29812, letter: 'a' },
   { id: 'cap-zc-b', sectorId: 'zeap-c', fecha: '2026-09-14', hora: '10:19:33', altitud: 87.5, gimbal: -90, lat: -18.48738, lng: -70.29808, letter: 'b' },
 ];

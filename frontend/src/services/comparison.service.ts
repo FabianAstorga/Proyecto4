@@ -1,47 +1,44 @@
 import { API_BASE_URL, ApiError, TOKEN_KEY } from './http';
 
-export interface ComparisonResult {
-  image: Blob;
-  changes: number;
+export interface ResultadoComparacion {
+  imagen: Blob;
+  cambios: number;
 }
 
-/**
- * Envía las imágenes A/B al backend ASP.NET Core y devuelve la imagen A
- * marcada con los cambios detectados por OpenCV.
- */
-export async function processComparison(
-  fileA: File,
-  fileB: File,
+export type AlgoritmoComparador = 'precision' | 'ratio' | 'hibrido';
+
+export async function compararArchivos(
+  archivoA: File,
+  archivoB: File,
+  algoritmo: AlgoritmoComparador = 'precision',
   signal?: AbortSignal,
-): Promise<ComparisonResult> {
-  const form = new FormData();
-  form.append('imagenA', fileA, fileA.name);
-  form.append('imagenB', fileB, fileB.name);
+): Promise<ResultadoComparacion> {
+  const formulario = new FormData();
+  formulario.append('imagenA', archivoA, archivoA.name);
+  formulario.append('imagenB', archivoB, archivoB.name);
+  formulario.append('algoritmo', algoritmo);
 
   const token = localStorage.getItem(TOKEN_KEY);
 
-  const response = await fetch(`${API_BASE_URL}/api/comparador/procesar`, {
+  const respuesta = await fetch(`${API_BASE_URL}/api/comparador/procesar`, {
     method: 'POST',
-    body: form,
+    body: formulario,
     signal,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 
-  return readComparisonResponse(response);
+  return leerRespuestaComparacion(respuesta);
 }
 
-/**
- * Compara dos fotografías ya almacenadas en el servidor, sin volver a
- * subir los archivos desde el navegador.
- */
-export async function processComparisonByPhotos(
+export async function compararFotografias(
   idFotoA: number,
   idFotoB: number,
+  algoritmo: AlgoritmoComparador = 'precision',
   signal?: AbortSignal,
-): Promise<ComparisonResult> {
+): Promise<ResultadoComparacion> {
   const token = localStorage.getItem(TOKEN_KEY);
 
-  const response = await fetch(
+  const respuesta = await fetch(
     `${API_BASE_URL}/api/comparador/procesar-fotos`,
     {
       method: 'POST',
@@ -50,35 +47,35 @@ export async function processComparisonByPhotos(
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ idFotoA, idFotoB }),
+      body: JSON.stringify({ idFotoA, idFotoB, algoritmo }),
     },
   );
 
-  return readComparisonResponse(response);
+  return leerRespuestaComparacion(respuesta);
 }
 
-async function readComparisonResponse(
-  response: Response,
-): Promise<ComparisonResult> {
-  if (!response.ok) {
-    let message = 'No fue posible procesar las imágenes.';
+async function leerRespuestaComparacion(
+  respuesta: Response,
+): Promise<ResultadoComparacion> {
+  if (!respuesta.ok) {
+    let mensaje = 'No fue posible procesar las imágenes.';
     try {
-      const problem = (await response.json()) as {
+      const problema = (await respuesta.json()) as {
         detail?: string;
         title?: string;
       };
-      message = problem.detail ?? problem.title ?? message;
+      mensaje = problema.detail ?? problema.title ?? mensaje;
     } catch {
-      // La API podría devolver texto plano o un cuerpo vacío.
+      mensaje = 'No fue posible procesar las imágenes.';
     }
-    throw new ApiError(message, response.status);
+    throw new ApiError(mensaje, respuesta.status);
   }
 
-  const header = response.headers.get('X-Cambios-Detectados');
-  const changes = Number(header ?? 0);
+  const encabezado = respuesta.headers.get('X-Cambios-Detectados');
+  const cambios = Number(encabezado ?? 0);
 
   return {
-    image: await response.blob(),
-    changes: Number.isFinite(changes) ? changes : 0,
+    imagen: await respuesta.blob(),
+    cambios: Number.isFinite(cambios) ? cambios : 0,
   };
 }
