@@ -98,7 +98,6 @@ export const Comparador = () => {
   const [fotoA, setFotoA] = useState<FotografiaGaleria | null>(null);
   const [fotoB, setFotoB] = useState<FotografiaGaleria | null>(null);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
-  const [changeCount, setChangeCount] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [processError, setProcessError] = useState<string | null>(null);
 
@@ -183,7 +182,6 @@ export const Comparador = () => {
   useEffect(() => {
     if (paso !== 3 || !fotoA || !fotoB) {
       setProcessedUrl(null);
-      setChangeCount(0);
       setProcessError(null);
       setProcessing(false);
       return;
@@ -191,15 +189,13 @@ export const Comparador = () => {
 
     const controller = new AbortController();
     setProcessedUrl(null);
-    setChangeCount(0);
     setProcessError(null);
     setProcessing(true);
 
     processComparisonByPhotos(fotoA.idFoto, fotoB.idFoto, controller.signal)
-      .then(({ image, changes }) => {
+      .then(({ image }) => {
         if (controller.signal.aborted) return;
         setProcessedUrl(URL.createObjectURL(image));
-        setChangeCount(changes);
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
@@ -581,21 +577,6 @@ export const Comparador = () => {
 
           {paso === 3 && (
             <section className="border border-slate-200 bg-white shadow-sm">
-              <header className="flex items-center gap-4 border-b border-slate-200 px-4 py-4 md:px-6">
-                <span className="grid h-10 w-10 shrink-0 place-items-center bg-[#002855] text-sm font-black text-white">
-                  03
-                </span>
-                <div>
-                  <h2 className="text-xl font-black uppercase leading-none tracking-tighter text-[#002855] md:text-2xl">
-                    Comparación
-                  </h2>
-                  <p className="mt-1 text-[10px] font-medium text-slate-500">
-                    Revisa los cambios detectados y usa el control deslizante
-                    para contrastar antes y después.
-                  </p>
-                </div>
-              </header>
-
               <div className="space-y-5 p-4 md:p-6">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ResumenSeleccion
@@ -641,15 +622,6 @@ export const Comparador = () => {
                     transition={{ duration: 0.35, ease: 'easeOut' }}
                     className="space-y-3"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
-                        Imagen A original vs. detección de cambios
-                      </p>
-                      <span className="border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-700">
-                        {changeCount} cambios detectados
-                      </span>
-                    </div>
-
                     <div className="border border-white/10 bg-[#001a35] p-2 shadow-2xl md:p-3">
                       <Cortina
                         key={`${comparison.captureA.id}-${comparison.captureB.id}`}
